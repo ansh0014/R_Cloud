@@ -1,205 +1,143 @@
-# 05 - Observability
+# Observability & AgentOps
 
-> **Purpose:**  
-> The Observability Service provides complete visibility into deployed AI agents by collecting logs, metrics, traces, events, and runtime analytics. It helps developers monitor agent health, debug failures, analyze performance, and optimize costs.
+> Monitoring, tracing and operational management of AI applications deployed on R Agent Cloud.
 
 ---
 
 # Overview
 
-AI agents are long-running, distributed applications that interact with multiple services such as LLM providers, databases, APIs, and external tools.
+The Observability Service is responsible for monitoring the health and operational state of deployed AI applications.
 
-Unlike traditional applications, debugging AI agents requires visibility into:
+Unlike the Runtime Service, it does **not execute AI applications**.
 
-- Prompt execution
-- Tool calls
-- Model latency
-- Token usage
-- Memory retrieval
-- Multi-agent communication
-- Runtime performance
+Its responsibilities are:
 
-The Observability Service centralizes all this information into a single dashboard.
-
----
-
-# Goals
-
-- Monitor every deployed AI agent
-- Collect distributed traces
-- Capture runtime logs
-- Monitor infrastructure metrics
-- Track token consumption
-- Analyze API costs
-- Debug multi-agent workflows
-- Detect failures and bottlenecks
-- Provide real-time dashboards
+- Runtime Monitoring
+- Deployment Monitoring
+- Health Monitoring
+- Distributed Tracing
+- Log Aggregation
+- Metrics Collection
+- Runtime Analytics
+- Deployment History
+- AgentOps Dashboard
 
 ---
 
 # Architecture
 
-```mermaid
-flowchart LR
-
-A[API Gateway]
-B[Deployment Service]
-C[Runtime Service]
-D[AI Agents]
-
-A --> OTel
-B --> OTel
-C --> OTel
-D --> OTel
-
-OTel[OpenTelemetry SDK]
-
-OTel --> Collector[OTel Collector]
-
-Collector --> Prometheus
-Collector --> Jaeger
-Collector --> PostgreSQL
-
-Prometheus --> Grafana
-Jaeger --> Dashboard
-PostgreSQL --> Dashboard
-```
-
----
-
-# Components
-
-## OpenTelemetry
-
-OpenTelemetry is responsible for instrumenting every service in the platform.
-
-It collects:
-
-- Traces
-- Metrics
-- Logs
-
-Every microservice sends telemetry data through the OpenTelemetry SDK.
-
----
-
-## OpenTelemetry Collector
-
-The collector receives telemetry data from every service and exports it to different backends.
-
-Responsibilities:
-
-- Data aggregation
-- Data processing
-- Export pipelines
-- Sampling
-- Filtering
-
----
-
-## Prometheus
-
-Prometheus stores time-series metrics.
-
-Examples:
-
-- CPU Usage
-- Memory Usage
-- Request Rate
-- Error Rate
-- Response Time
-
----
-
-## Jaeger
-
-Jaeger visualizes distributed traces.
-
-It allows developers to inspect every step of an agent execution.
-
-Example:
-
 ```text
-Gateway
- ↓
-Runtime
- ↓
-GPT Request
- ↓
-Tool Call
- ↓
-Database
- ↓
-Response
+                    Frontend Dashboard
+                           │
+                           ▼
+                  AgentOps API Service
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+    OpenTelemetry     PostgreSQL       Runtime Registry
+          ▲                ▲                ▲
+          │                │                │
+          └────────────────┼────────────────┘
+                           ▲
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+     API Gateway    Deployment Service   Runtime Service
+                           │
+                           ▼
+                      Railway Runtime
 ```
 
 ---
 
-## Grafana
+# Responsibilities
 
-Grafana provides dashboards for:
+The Observability Service is responsible for
 
-- Infrastructure
-- Runtime
-- AI Agents
-- Deployment
-- Cost Analytics
-- Performance
-
----
-
-# Collected Metrics
-
-## Platform Metrics
-
-- Total Requests
-- Active Agents
-- Running Deployments
-- API Throughput
-- Success Rate
-- Failure Rate
-
----
-
-## Runtime Metrics
-
-- Runtime Startup Time
 - Runtime Health
-- Restart Count
-- Active Sessions
-- Memory Usage
-- CPU Usage
+- Runtime Status
+- Deployment Analytics
+- Deployment History
+- Runtime Logs
+- Request Metrics
+- Error Tracking
+- Distributed Tracing
+- Runtime Registry Visualization
+- Agent Registry Visualization
+
+It **does not inspect the internal AI logic**.
 
 ---
 
-## AI Metrics
+# Data Sources
 
-- Prompt Tokens
-- Completion Tokens
-- Total Tokens
-- Model Response Time
-- Tool Execution Time
-- Memory Retrieval Time
+The Observability Service collects data from
 
----
+### API Gateway
 
-## Deployment Metrics
-
-- Deployment Duration
-- Deployment Failures
-- Rollback Count
-- Runtime Initialization Time
+- Request Count
+- HTTP Latency
+- Status Codes
+- Error Rate
 
 ---
 
-# Distributed Tracing
+### Deployment Service
 
-Every request receives a unique Trace ID.
+- Deployment Started
+- Deployment Completed
+- Deployment Failed
+- Deployment History
+- Version Information
 
-Example:
+---
+
+### Runtime Service
+
+- Runtime Created
+- Runtime Started
+- Runtime Restarted
+- Runtime Deleted
+- Runtime Status
+- Health Checks
+
+---
+
+### Railway API
+
+- Deployment Status
+- Runtime Status
+- Runtime Logs
+- CPU Usage (if available)
+- Memory Usage (if available)
+
+---
+
+### OpenTelemetry Collector
+
+- HTTP Traces
+- gRPC Traces
+- Database Queries
+- Internal Service Latency
+- Error Traces
+
+---
+
+# OpenTelemetry
+
+Every backend service is instrumented using OpenTelemetry.
+
+Services
+
+- API Gateway
+- Deployment Service
+- Runtime Service
+- AgentOps Service
+
+Example trace
 
 ```text
-Trace ID
+Client
 
 ↓
 
@@ -207,242 +145,430 @@ API Gateway
 
 ↓
 
+Deployment Service
+
+↓
+
 Runtime Service
 
 ↓
 
-Planner Agent
+Railway
 
 ↓
 
-Research Agent
-
-↓
-
-Tool Call
-
-↓
-
-OpenAI API
-
-↓
-
-Database
-
-↓
-
-Final Response
+Response
 ```
 
-Developers can inspect each span independently.
+Collected information
+
+- Trace ID
+- Span ID
+- Request Duration
+- Service Latency
+- Error Details
 
 ---
 
-# Logs
+# Runtime Health Monitoring
 
-Each service generates structured logs.
+The Runtime Service periodically checks
+
+```
+GET /health
+```
+
+Possible states
+
+```text
+Healthy
+
+Starting
+
+Unhealthy
+
+Stopped
+
+Failed
+```
+
+If unhealthy
+
+```
+Restart Runtime
+```
+
+---
+
+# Runtime Registry
+
+Every runtime maintains
+
+```text
+Deployment ID
+
+Runtime URL
+
+Cloud Provider
+
+Health
+
+Status
+
+Created At
+
+Updated At
+```
+
+Displayed in AgentOps.
+
+---
+
+# Agent Registry
+
+The platform stores metadata returned from
+
+```
+GET /metadata
+```
 
 Example
 
 ```json
 {
-  "timestamp": "...",
-  "service": "runtime-service",
-  "agent": "research-agent",
-  "level": "INFO",
-  "traceId": "...",
-  "message": "Tool execution completed"
+    "name":"Customer Support",
+    "framework":"LangGraph",
+    "version":"1.0.0",
+    "capabilities":[
+        "chat",
+        "rag"
+    ]
 }
 ```
 
----
+Stored information
 
-# Events
-
-The platform records important lifecycle events.
-
-Examples:
-
-- Deployment Started
-- Deployment Completed
-- Runtime Started
-- Runtime Stopped
-- Agent Invoked
-- Tool Executed
-- Memory Retrieved
-- LLM Response Received
-- Agent Completed
+- Agent Name
+- Framework
+- Version
+- Runtime
+- Deployment
+- Capabilities
 
 ---
 
-# Agent Execution Timeline
+# Deployment Monitoring
 
-```mermaid
-sequenceDiagram
+Every deployment is tracked.
 
-participant User
-participant Gateway
-participant Runtime
-participant Agent
-participant Tool
-participant LLM
-participant OTel
+Lifecycle
 
-User->>Gateway: Request
+```text
+Created
 
-Gateway->>Runtime: Forward Request
+↓
 
-Runtime->>Agent: Execute
+Validating
 
-Agent->>LLM: Prompt
+↓
 
-LLM-->>Agent: Response
+Deploying
 
-Agent->>Tool: Tool Call
+↓
 
-Tool-->>Agent: Result
+Running
 
-Agent->>OTel: Trace
+↓
 
-Runtime->>OTel: Metrics
+Restarted
 
-Gateway->>OTel: Logs
+↓
 
-Runtime-->>User: Final Response
+Stopped
+
+↓
+
+Deleted
+```
+
+Deployment history stores
+
+- Deployment ID
+- Repository
+- Branch
+- Commit
+- Version
+- Status
+- Timestamp
+
+---
+
+# Runtime Metrics
+
+Collected metrics
+
+- Runtime Status
+- Request Count
+- Success Rate
+- Failure Rate
+- Average Latency
+- P95 Latency
+- Uptime
+- Restart Count
+
+---
+
+# Request Analytics
+
+For every request
+
+```text
+Request ID
+
+Deployment
+
+Runtime
+
+Status Code
+
+Latency
+
+Timestamp
+```
+
+Example Dashboard
+
+```text
+Requests
+
+12,450
+
+Average Latency
+
+320 ms
+
+Success Rate
+
+99.4%
+
+Failed Requests
+
+18
 ```
 
 ---
 
-# Dashboard Modules
+# Logs
 
-## Platform Dashboard
+The platform aggregates runtime logs.
 
-Displays:
+Sources
 
-- Total Deployments
-- Active Agents
-- Runtime Status
-- API Requests
-- Overall Health
-
----
-
-## Agent Dashboard
-
-Displays:
-
-- Running Status
-- Current Version
-- Endpoint
-- Runtime Health
-- Recent Requests
-
----
-
-## Trace Explorer
-
-Developers can inspect:
-
-- Complete request flow
-- Individual spans
-- Latency per operation
-- Errors
-
----
-
-## Logs Viewer
-
-Features:
-
-- Search logs
-- Filter by service
-- Filter by agent
-- Filter by deployment
-- Filter by trace ID
-
----
-
-## Metrics Dashboard
-
-Visualizes:
-
-- CPU
-- Memory
-- Latency
-- Throughput
-- Requests per Second
-- Error Rate
-
----
-
-## Cost Dashboard
-
-Tracks:
-
-- Prompt Tokens
-- Completion Tokens
-- Total Tokens
-- Cost per Request
-- Cost per Agent
-- Cost per Project
-- Daily & Monthly Usage
-
----
-
-# Alerting
-
-The system can generate alerts for:
-
-- Deployment failures
-- High latency
-- Runtime crashes
-- Excessive token usage
-- High API cost
-- Unhealthy services
-
-Future integrations:
-
-- Email
-- Slack
-- Discord
-- Microsoft Teams
-
----
-
-# OpenTelemetry Integration
-
-The following services are instrumented:
-
-- API Gateway
-- Deployment Service
 - Runtime Service
-- AI Runtime
-- PostgreSQL
-- gRPC Communication
-- WebSocket Server
+- Railway Logs
+- Backend Services
 
-Each service exports:
+Example
 
-- Traces
-- Metrics
-- Logs
+```text
+10:20 Runtime Started
 
----
+10:22 Health Check Passed
 
-# Future Enhancements
+10:24 Request Received
 
-- AI-powered anomaly detection
-- Custom dashboards
-- Distributed log search
-- Predictive cost analysis
-- Real-time notifications
-- SLO & SLA monitoring
-- Multi-tenant observability
-- Usage analytics
-- Performance benchmarking
+10:24 Response Sent
+
+10:30 Runtime Restarted
+```
 
 ---
 
-# Summary
+# Distributed Tracing
 
-The Observability Service provides complete visibility into the R Agent Cloud platform. By combining OpenTelemetry, Prometheus, Jaeger, and Grafana, it enables developers to monitor deployments, inspect distributed traces, analyze runtime performance, debug AI workflows, and optimize operational costs from a unified dashboard.
+Example
+
+```text
+Client
+
+↓
+
+API Gateway
+
+↓
+
+Deployment Service
+
+↓
+
+Runtime Service
+
+↓
+
+Railway
+
+↓
+
+Response
+```
+
+Every span contains
+
+- Trace ID
+- Parent Span
+- Service Name
+- Duration
+- Status
+
+---
+
+# Error Tracking
+
+Captured errors
+
+- Validation Failed
+- Runtime Failed
+- Deployment Failed
+- Health Check Failed
+- Gateway Errors
+- Internal Server Errors
+
+Example
+
+```text
+Runtime
+
+↓
+
+Health Failed
+
+↓
+
+Restart Triggered
+
+↓
+
+Recovered
+```
+
+---
+
+# AgentOps Dashboard
+
+The dashboard displays
+
+### Deployments
+
+- Running
+- Failed
+- Stopped
+- Total Deployments
+
+---
+
+### Runtime
+
+- Runtime Status
+- Runtime URL
+- Health
+- Provider
+- Version
+
+---
+
+### Agents
+
+- Agent Name
+- Framework
+- Capabilities
+- Deployment
+- Runtime
+
+---
+
+### Monitoring
+
+- Request Count
+- Success Rate
+- Failure Rate
+- Average Latency
+- Runtime Uptime
+- Restart Count
+
+---
+
+### Logs
+
+- Runtime Logs
+- Deployment Logs
+- Error Logs
+
+---
+
+### Traces
+
+- HTTP Requests
+- gRPC Calls
+- Deployment Pipeline
+- Runtime Lifecycle
+
+---
+
+# Cost Analytics
+
+Since AI applications are user-provided repositories, the platform **cannot automatically determine LLM token usage or model cost** without application-level instrumentation.
+
+For the MVP, the dashboard displays operational costs and infrastructure metrics only.
+
+Displayed information
+
+- Number of Requests
+- Runtime Uptime
+- Deployment Count
+- Runtime Restarts
+- Average Response Time
+- Infrastructure Resource Usage (when available)
+
+Future versions may support token and model cost reporting if applications expose usage data through their runtime APIs.
+
+---
+
+# Event Flow
+
+```text
+Deployment Service
+        │
+        ├── deployment.created
+        ├── deployment.completed
+        ▼
+
+Runtime Service
+        │
+        ├── runtime.started
+        ├── runtime.restarted
+        ├── health.failed
+        ▼
+
+OpenTelemetry Collector
+        │
+        ▼
+
+AgentOps Service
+        │
+        ▼
+
+Dashboard
+```
+
+---
+
+# Future Scope
+
+- Multi-cloud monitoring
+- Kubernetes metrics
+- Alerting
+- Slack/Discord notifications
+- Prometheus integration
+- Grafana dashboards
+- Optional AI execution telemetry
+- Cost analytics with provider usage data

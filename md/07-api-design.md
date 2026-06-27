@@ -1,41 +1,46 @@
 # 07 - API Design
 
-## Purpose
+# Overview
 
-The API Layer serves as the communication backbone of **R Agent Cloud**. It exposes REST APIs for external clients, gRPC APIs for internal microservices, and WebSocket connections for real-time monitoring.
+The API Layer is the communication backbone of **R Agent Cloud**.
 
-The API layer is responsible for authentication, routing, deployment management, runtime communication, observability, and project management.
+It provides secure communication between users, frontend applications, backend microservices, and deployed AI runtimes.
+
+The API layer is responsible for:
+
+- Authentication
+- Project Management
+- GitHub Integration
+- Deployment Management
+- Runtime Management
+- Agent Registry
+- Runtime Registry
+- AgentOps
+- Observability
+- Real-time Updates
 
 ---
 
 # API Architecture
 
-```mermaid
-flowchart LR
-
-Client
-
-Client --> REST[REST API]
-
-Dashboard --> WS[WebSocket]
-
-REST --> Gateway[API Gateway]
-
-Gateway --> ProjectService
-
-Gateway --> DeploymentService
-
-Gateway --> RuntimeService
-
-Gateway --> ObservabilityService
-
-ProjectService <--> gRPC
-
-DeploymentService <--> gRPC
-
-RuntimeService <--> gRPC
-
-ObservabilityService <--> gRPC
+```text
+                    Client
+                       │
+                       ▼
+                 REST API (HTTPS)
+                       │
+                       ▼
+                  API Gateway
+                       │
+      ┌────────────────┼────────────────┐
+      ▼                ▼                ▼
+ Deployment      Runtime Service   AgentOps Service
+      │                │                │
+      └────────────gRPC─────────────────┘
+                       │
+                 PostgreSQL
+                       │
+                    Railway
 ```
 
 ---
@@ -44,36 +49,35 @@ ObservabilityService <--> gRPC
 
 | Communication | Protocol |
 |--------------|----------|
-| Client → Platform | HTTP REST |
+| Client → Platform | REST |
 | Dashboard → Platform | WebSocket |
 | Service → Service | gRPC |
 | GitHub → Platform | Webhook |
-| Telemetry | OpenTelemetry |
+| Internal Telemetry | OpenTelemetry |
 
 ---
 
-# API Gateway Responsibilities
+# API Gateway
 
-The API Gateway acts as the single entry point into the platform.
+The API Gateway acts as the single entry point.
 
-Responsibilities:
+Responsibilities
 
 - Authentication
 - Authorization
-- Request Routing
+- JWT Validation
+- API Keys
 - Rate Limiting
-- API Versioning
-- Request Validation
+- Request Routing
 - Logging
-- Metrics Collection
+- OpenTelemetry
+- API Versioning
 
 ---
 
-# REST API Design
+# Base URL
 
-Base URL
-
-```text
+```
 /api/v1
 ```
 
@@ -85,25 +89,6 @@ Base URL
 
 ```http
 POST /api/v1/auth/login
-```
-
-Request
-
-```json
-{
-  "email": "user@example.com",
-  "password": "password"
-}
-```
-
-Response
-
-```json
-{
-  "accessToken": "...",
-  "refreshToken": "...",
-  "expiresIn": 3600
-}
 ```
 
 ---
@@ -134,18 +119,18 @@ POST /api/v1/projects
 
 ---
 
-## Get Project
-
-```http
-GET /api/v1/projects/{projectId}
-```
-
----
-
 ## List Projects
 
 ```http
 GET /api/v1/projects
+```
+
+---
+
+## Get Project
+
+```http
+GET /api/v1/projects/{projectId}
 ```
 
 ---
@@ -158,7 +143,7 @@ DELETE /api/v1/projects/{projectId}
 
 ---
 
-# GitHub Integration APIs
+# GitHub APIs
 
 ## Connect Repository
 
@@ -168,7 +153,15 @@ POST /api/v1/projects/{projectId}/github
 
 ---
 
-## Webhook Endpoint
+## Sync Repository
+
+```http
+POST /api/v1/projects/{projectId}/sync
+```
+
+---
+
+## GitHub Webhook
 
 ```http
 POST /api/v1/webhooks/github
@@ -176,51 +169,26 @@ POST /api/v1/webhooks/github
 
 ---
 
-# Agent APIs
-
-## Register Agent
-
-```http
-POST /api/v1/agents
-```
-
----
-
-## List Agents
-
-```http
-GET /api/v1/agents
-```
-
----
-
-## Get Agent
-
-```http
-GET /api/v1/agents/{agentId}
-```
-
----
-
-## Delete Agent
-
-```http
-DELETE /api/v1/agents/{agentId}
-```
-
----
-
 # Deployment APIs
 
-## Deploy Agent
+## Deploy Project
 
 ```http
 POST /api/v1/deployments
 ```
 
+Example
+
+```json
+{
+  "projectId":"proj_001",
+  "branch":"main"
+}
+```
+
 ---
 
-## Get Deployment
+## Deployment Status
 
 ```http
 GET /api/v1/deployments/{deploymentId}
@@ -231,25 +199,41 @@ GET /api/v1/deployments/{deploymentId}
 ## Deployment History
 
 ```http
-GET /api/v1/deployments/history
+GET /api/v1/deployments
 ```
 
 ---
 
-## Rollback Deployment
+## Redeploy
 
 ```http
-POST /api/v1/deployments/{deploymentId}/rollback
+POST /api/v1/deployments/{deploymentId}/redeploy
+```
+
+---
+
+## Delete Deployment
+
+```http
+DELETE /api/v1/deployments/{deploymentId}
 ```
 
 ---
 
 # Runtime APIs
 
-## Execute Agent
+## List Runtimes
 
 ```http
-POST /api/v1/runtime/{agentId}/execute
+GET /api/v1/runtimes
+```
+
+---
+
+## Runtime Details
+
+```http
+GET /api/v1/runtimes/{runtimeId}
 ```
 
 ---
@@ -257,7 +241,7 @@ POST /api/v1/runtime/{agentId}/execute
 ## Restart Runtime
 
 ```http
-POST /api/v1/runtime/{agentId}/restart
+POST /api/v1/runtimes/{runtimeId}/restart
 ```
 
 ---
@@ -265,143 +249,131 @@ POST /api/v1/runtime/{agentId}/restart
 ## Stop Runtime
 
 ```http
-POST /api/v1/runtime/{agentId}/stop
+POST /api/v1/runtimes/{runtimeId}/stop
 ```
 
 ---
 
-## Runtime Status
+## Delete Runtime
 
 ```http
-GET /api/v1/runtime/{agentId}
+DELETE /api/v1/runtimes/{runtimeId}
 ```
 
 ---
 
-# Observability APIs
+# Agent Registry APIs
 
-## Agent Metrics
+## List Agents
 
 ```http
-GET /api/v1/metrics/{agentId}
+GET /api/v1/agents
 ```
 
 ---
 
-## Execution Logs
+## Agent Details
 
 ```http
-GET /api/v1/logs/{agentId}
+GET /api/v1/agents/{agentId}
+```
+
+Returns
+
+- Framework
+- Runtime
+- Version
+- Capabilities
+- Deployment
+
+---
+
+# AgentOps APIs
+
+## Dashboard
+
+```http
+GET /api/v1/agentops/dashboard
 ```
 
 ---
 
-## Traces
+## Runtime Metrics
 
 ```http
-GET /api/v1/traces/{traceId}
+GET /api/v1/agentops/metrics/{deploymentId}
 ```
 
 ---
 
-## Dashboard Statistics
+## Runtime Logs
 
 ```http
-GET /api/v1/dashboard
+GET /api/v1/agentops/logs/{deploymentId}
 ```
 
 ---
 
-# API Key Management
-
-## Create API Key
+## Runtime Health
 
 ```http
-POST /api/v1/api-keys
+GET /api/v1/agentops/health/{deploymentId}
 ```
 
 ---
 
-## List API Keys
+## Deployment Analytics
 
 ```http
-GET /api/v1/api-keys
-```
-
----
-
-## Revoke API Key
-
-```http
-DELETE /api/v1/api-keys/{keyId}
+GET /api/v1/agentops/deployments
 ```
 
 ---
 
 # WebSocket API
 
-The dashboard uses WebSockets for real-time updates.
-
 Endpoint
 
-```text
+```
 /ws
 ```
 
-Supported events
+Events
 
-```text
+```
 deployment.started
 
 deployment.completed
 
 runtime.started
 
+runtime.restarted
+
 runtime.stopped
 
-agent.executed
+runtime.failed
 
-agent.failed
-
-trace.created
-
-logs.updated
+health.changed
 
 metrics.updated
+
+logs.updated
 ```
 
 ---
 
-# gRPC Services
-
-Internal communication between microservices uses gRPC.
-
----
-
-## Project Service
-
-```protobuf
-CreateProject()
-
-GetProject()
-
-ListProjects()
-
-DeleteProject()
-```
-
----
+# Internal gRPC APIs
 
 ## Deployment Service
 
 ```protobuf
-DeployAgent()
+Deploy()
 
-RollbackDeployment()
+Redeploy()
+
+DeleteDeployment()
 
 GetDeployment()
-
-ListDeployments()
 ```
 
 ---
@@ -409,32 +381,54 @@ ListDeployments()
 ## Runtime Service
 
 ```protobuf
-ExecuteAgent()
+CreateRuntime()
 
 RestartRuntime()
 
 StopRuntime()
+
+DeleteRuntime()
 
 GetRuntimeStatus()
 ```
 
 ---
 
-## Observability Service
+## AgentOps Service
 
 ```protobuf
-PublishTrace()
+GetMetrics()
 
-PublishMetrics()
+GetLogs()
 
-PublishLogs()
+GetRuntimeHealth()
 
 GetDashboard()
 ```
 
 ---
 
-# Standard Response Format
+# Runtime Contract
+
+Every deployed AI application must expose
+
+```
+POST /execute
+
+POST /stream
+
+GET /health
+
+GET /metadata
+```
+
+These endpoints are **implemented by the deployed AI application**, not by the platform.
+
+The Runtime Service communicates with deployed applications using this standard contract.
+
+---
+
+# Standard Response
 
 Success
 
@@ -442,7 +436,7 @@ Success
 {
   "success": true,
   "data": {},
-  "message": "Operation completed successfully"
+  "message": "Success"
 }
 ```
 
@@ -452,8 +446,8 @@ Error
 {
   "success": false,
   "error": {
-    "code": "DEPLOYMENT_FAILED",
-    "message": "Unable to deploy agent."
+    "code":"DEPLOYMENT_FAILED",
+    "message":"Deployment failed."
   }
 }
 ```
@@ -465,8 +459,8 @@ Error
 | Code | Meaning |
 |------|---------|
 | 200 | Success |
-| 201 | Resource Created |
-| 204 | No Content |
+| 201 | Created |
+| 204 | Deleted |
 | 400 | Bad Request |
 | 401 | Unauthorized |
 | 403 | Forbidden |
@@ -474,35 +468,19 @@ Error
 | 409 | Conflict |
 | 422 | Validation Failed |
 | 429 | Rate Limited |
-| 500 | Internal Server Error |
-
----
-
-# API Versioning
-
-All APIs are versioned.
-
-Example
-
-```text
-/api/v1/...
-
-/api/v2/...
-```
-
-Older versions remain supported until officially deprecated.
+| 500 | Internal Error |
 
 ---
 
 # Security
 
-Every request passes through:
+Every request passes through
 
 - JWT Authentication
 - API Key Validation
-- Role-Based Access Control (RBAC)
-- Request Validation
+- RBAC
 - Rate Limiting
+- Request Validation
 - Audit Logging
 
 ---
@@ -511,14 +489,14 @@ Every request passes through:
 
 - GraphQL Gateway
 - Server-Sent Events (SSE)
-- Streaming Agent Responses
-- Batch APIs
-- Multi-Region API Gateway
-- API Analytics
-- SDKs (Go, Python, TypeScript)
+- Multi-region API Gateway
+- Batch Deployment APIs
+- Kubernetes Runtime APIs
+- Multi-cloud Runtime APIs
+- AI Marketplace APIs
 
 ---
 
 # Summary
 
-The API Layer provides a unified communication interface for R Agent Cloud. It combines REST APIs for external clients, gRPC for internal microservices, WebSockets for real-time updates, and GitHub Webhooks for automated deployments. This architecture enables secure, scalable, and efficient communication across all platform components.
+The API Layer provides a unified interface for the R Agent Cloud platform. REST APIs are used for external clients, gRPC enables communication between backend microservices, WebSockets power the real-time AgentOps dashboard, and deployed AI applications follow a standardized Runtime Contract (`/execute`, `/stream`, `/health`, `/metadata`). This design keeps the platform modular, scalable, and cloud-provider agnostic.

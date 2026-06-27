@@ -1,259 +1,84 @@
-# 04 - Deployment Engine
+# Deployment Architecture
 
-> **Purpose:**  
-> The Deployment Engine is responsible for transforming an AI agent definition into a running service. It manages validation, deployment, runtime creation, versioning, lifecycle management, and endpoint generation.
+> End-to-end deployment lifecycle of AI applications in R Agent Cloud.
 
 ---
 
 # Overview
 
-The Deployment Engine is the core component of **R Agent Cloud**.
+The Deployment Service is responsible for transforming an AI project stored in GitHub into a production-ready cloud application.
 
-Instead of manually deploying AI agents, developers only need to push their code or configuration to GitHub. The platform automatically validates, deploys, and exposes the agent through a managed API endpoint.
+The deployment process consists of:
 
-The deployment engine is designed to abstract infrastructure complexity while providing a consistent deployment workflow.
+- Repository Validation
+- AI Project Validation
+- Runtime Preparation
+- Cloud Deployment
+- Runtime Registration
+- Health Verification
+- Agent Registration
 
----
-
-# Responsibilities
-
-The Deployment Engine is responsible for:
-
-- Reading agent configurations
-- Validating YAML specifications
-- GitHub Webhook Integration
-- Managing deployment pipelines
-- Registering new agents
-- Creating runtime instances
-- Managing deployment versions
-- Rolling back failed deployments
-- Generating public endpoints
-- Sending deployment events
-- Tracking deployment status
+The Runtime Service abstracts the cloud provider, allowing deployments to Railway today and other providers in the future.
 
 ---
 
-# Deployment Workflow
+# High Level Deployment Flow
 
-```mermaid
-flowchart LR
-
-A[Developer]
---> B[GitHub Repository]
-
-B --> C[GitHub Webhook]
-
-C --> D[Deployment Service]
-
-D --> E[Validate YAML]
-
-E --> F[Register Agent]
-
-F --> G[Create Runtime]
-
-G --> H[Generate Endpoint]
-
-H --> I[Deployment Successful]
+```text
+              Developer
+                  │
+                  ▼
+           Push Repository
+                  │
+                  ▼
+               GitHub
+                  │
+                  ▼
+        Deployment Service
+                  │
+        AI Project Validation
+                  │
+                  ▼
+          Runtime Service
+                  │
+                  ▼
+             Railway API
+                  │
+                  ▼
+        Running AI Application
+                  │
+                  ▼
+          Health Verification
+                  │
+                  ▼
+          Runtime Registry
+                  │
+                  ▼
+          AgentOps Dashboard
 ```
 
 ---
 
 # Deployment Lifecycle
 
-Every deployment passes through the following stages.
-
-| Stage | Description |
-|---------|-------------|
-| Pending | Deployment request received |
-| Validating | YAML and project validation |
-| Building | Preparing runtime |
-| Deploying | Runtime initialization |
-| Running | Agent is live |
-| Updating | New version deployment |
-| Failed | Deployment failed |
-| Stopped | Runtime stopped |
-
----
-
-# Deployment Trigger Methods
-
-## 1. GitHub Push
-
-A push to the configured repository automatically triggers deployment.
-
-Example:
-
 ```text
-Developer
-      │
-git push
-      │
-GitHub Webhook
-      │
-Deployment Engine
-```
-
----
-
-## 2. Manual Deployment
-
-Users can deploy directly from the dashboard.
-
-```text
-Dashboard
+Repository Created
 
 ↓
 
-Deploy Button
+GitHub Push
 
 ↓
 
-Deployment Engine
-```
+Validation
 
----
+↓
 
-## 3. API Deployment
+Deployment
 
-External applications can deploy agents using REST APIs.
+↓
 
-Example
-
-```http
-POST /api/v1/deployments
-```
-
----
-
-# YAML Configuration
-
-Every agent must provide a deployment configuration.
-
-Example:
-
-```yaml
-agent:
-  name: support-agent
-  version: 1.0.0
-
-runtime:
-  framework: langgraph
-  language: python
-
-model:
-  provider: openai
-  model: gpt-5
-
-tools:
-  - search
-  - database
-
-deployment:
-  replicas: 1
-  cpu: 1
-  memory: 1Gi
-
-observability:
-  enabled: true
-```
-
----
-
-# YAML Validation
-
-Before deployment, the Deployment Engine validates:
-
-- Required fields
-- Agent name
-- Runtime
-- Model configuration
-- Tool configuration
-- Resource limits
-- Version information
-
-If validation fails, deployment stops immediately.
-
----
-
-# Agent Registry
-
-Every deployed agent is registered inside the Agent Registry.
-
-Stored metadata includes:
-
-- Agent ID
-- Agent Name
-- Version
-- Repository URL
-- Runtime
-- Owner
-- Deployment Status
-- Endpoint
-- Creation Date
-- Update Date
-
-The registry acts as the source of truth for all deployed agents.
-
----
-
-# Runtime Creation
-
-Once validation succeeds, the Runtime Manager creates a runtime instance.
-
-Responsibilities:
-
-- Initialize runtime
-- Load configuration
-- Register tools
-- Connect memory
-- Initialize model provider
-- Start runtime
-
----
-
-# Endpoint Generation
-
-Every deployment receives a managed endpoint.
-
-Example:
-
-```text
-https://api.ragent.cloud/agents/support-agent
-```
-
-Future versions may support:
-
-```text
-https://support.example.com
-```
-
-through custom domains.
-
----
-
-# Deployment Versioning
-
-Every deployment creates a new version.
-
-Example:
-
-| Version | Status |
-|----------|--------|
-| v1.0.0 | Active |
-| v1.1.0 | Active |
-| v1.2.0 | Failed |
-| v1.1.0 | Rollback |
-
-Version history allows restoring previous deployments.
-
----
-
-# Rollback Strategy
-
-If deployment fails:
-
-```text
-Deploy New Version
+Runtime Started
 
 ↓
 
@@ -261,163 +86,520 @@ Health Check
 
 ↓
 
-Success?
+Runtime Registered
+
+↓
+
+Running
+
+↓
+
+Monitoring
 ```
 
-If **No**
+---
+
+# Step 1 — GitHub Repository
+
+Developer pushes an AI project.
+
+Example
 
 ```text
-Rollback Previous Version
-```
+customer-support-agent/
 
-The previous runtime remains available until the new deployment becomes healthy.
-
----
-
-# Runtime Lifecycle
-
-```mermaid
-stateDiagram-v2
-
-[*] --> Created
-
-Created --> Starting
-
-Starting --> Running
-
-Running --> Updating
-
-Updating --> Running
-
-Running --> Stopped
-
-Running --> Failed
-
-Stopped --> Running
-
-Failed --> Stopped
+├── app.py
+├── ragent.yaml
+├── requirements.txt
+├── agents/
+├── prompts/
+└── tools/
 ```
 
 ---
 
-# Deployment Events
+# Step 2 — GitHub Webhook
 
-Every deployment generates events.
-
-Examples:
+GitHub sends an event to the Deployment Service.
 
 ```text
-Deployment Started
+GitHub
 
-Deployment Validated
+↓
 
-Runtime Created
-
-Endpoint Generated
-
-Deployment Completed
-
-Deployment Failed
-
-Deployment Rolled Back
+Deployment Service
 ```
 
-These events are forwarded to the Observability Service.
+The Deployment Service clones the repository.
 
 ---
 
-# Integration with Observability
+# Step 3 — AI Project Validation
 
-The Deployment Engine emits telemetry for:
+The repository is validated before deployment.
 
-- Deployment duration
-- Validation time
-- Runtime startup time
-- Deployment failures
-- Rollbacks
-- Active deployments
+Validation includes:
 
-These metrics are collected using OpenTelemetry and displayed in the monitoring dashboard.
+- Repository structure
+- `ragent.yaml`
+- Entrypoint
+- Required runtime endpoints
+- Python version
+- Runtime configuration
+- Environment variables
+- Dependency files
 
----
+Example
 
-# Error Handling
+```text
+Repository
 
-Possible deployment failures include:
+↓
 
-- Invalid YAML
-- Missing model configuration
-- Unsupported runtime
-- Runtime initialization failure
-- Agent registration failure
-- GitHub webhook verification failure
-- Database connection failure
+Validation
 
-Each failure generates:
+↓
 
-- Error logs
-- Trace information
-- Deployment report
+Passed
 
----
+↓
 
-# Public APIs
-
-## Create Deployment
-
-```http
-POST /api/v1/deployments
+Deployment
 ```
 
----
+If validation fails
 
-## Get Deployment Status
+```text
+Repository
 
-```http
-GET /api/v1/deployments/{deploymentId}
+↓
+
+Validation
+
+↓
+
+Deployment Rejected
 ```
 
----
+Example response
 
-## List Deployments
-
-```http
-GET /api/v1/deployments
+```json
+{
+  "status":"FAILED",
+  "errors":[
+    "Missing ragent.yaml",
+    "Missing /health endpoint"
+  ]
+}
 ```
 
 ---
 
-## Rollback Deployment
+# Step 4 — Runtime Preparation
 
-```http
-POST /api/v1/deployments/{deploymentId}/rollback
+Deployment Service creates a deployment request.
+
+Example
+
+```json
+{
+  "deploymentId":"dep_123",
+  "repository":"customer-support-agent",
+  "branch":"main",
+  "version":"1.0.0"
+}
+```
+
+This request is sent to the Runtime Service.
+
+---
+
+# Step 5 — Runtime Service
+
+The Runtime Service is responsible for infrastructure.
+
+Responsibilities
+
+- Build runtime
+- Configure environment
+- Deploy application
+- Monitor deployment
+- Register runtime
+- Restart runtime
+- Delete runtime
+
+The Runtime Service does not execute AI logic.
+
+---
+
+# Step 6 — Railway Deployment
+
+Runtime Service deploys the repository.
+
+```text
+Repository
+
+↓
+
+Build
+
+↓
+
+Railway
+
+↓
+
+Running Application
+```
+
+Future providers
+
+- Railway
+- Render
+- Kubernetes
+- AWS ECS
+
+The Deployment Service never changes.
+
+Only the Runtime Service changes.
+
+---
+
+# Step 7 — Runtime Health Verification
+
+The Runtime Service verifies the deployment.
+
+```
+GET /health
+```
+
+Possible states
+
+```text
+Healthy
+
+Starting
+
+Unhealthy
+
+Stopped
+```
+
+If unhealthy
+
+```
+Restart Runtime
 ```
 
 ---
 
-## Stop Deployment
+# Step 8 — Runtime Registration
 
-```http
-POST /api/v1/deployments/{deploymentId}/stop
+Every deployment is registered.
+
+Example
+
+```text
+Deployment ID
+
+Runtime URL
+
+Public URL
+
+Cloud Provider
+
+Status
+
+Version
+
+Health
+
+Created At
 ```
 
 ---
 
-# Future Enhancements
+# Step 9 — Agent Registration
 
-- Blue-Green Deployments
-- Canary Deployments
-- Automatic Scaling
-- Zero-Downtime Updates
-- Multi-Region Deployments
-- Custom Domains
-- Kubernetes Integration
-- CI/CD Pipelines
-- Deployment Templates
-- Multi-Cloud Support
+The platform stores metadata returned from
+
+```
+GET /metadata
+```
+
+Example
+
+```json
+{
+  "name":"Customer Support",
+  "framework":"LangGraph",
+  "version":"1.0.0",
+  "capabilities":[
+      "chat",
+      "rag"
+  ]
+}
+```
+
+Stored information
+
+- Agent Name
+- Framework
+- Version
+- Runtime
+- Deployment
+- Capabilities
 
 ---
 
-# Summary
+# Public Endpoint
 
-The Deployment Engine is responsible for the complete lifecycle of AI agent deployment. It validates agent configurations, creates runtime environments, manages deployment versions, generates public endpoints, integrates with observability services, and ensures reliable deployment through rollback and lifecycle management.
+Every deployment receives a unique endpoint.
+
+Example
+
+```
+https://api.ragent.cloud/deployments/dep_123
+```
+
+Internally
+
+```text
+Gateway
+
+↓
+
+Lookup Runtime
+
+↓
+
+Runtime URL
+
+↓
+
+POST /execute
+```
+
+---
+
+# Runtime Contract
+
+Every deployed AI application exposes
+
+```
+POST /execute
+
+POST /stream
+
+GET /health
+
+GET /metadata
+```
+
+This allows every deployment to be managed uniformly.
+
+---
+
+# Deployment States
+
+```text
+Created
+
+↓
+
+Validating
+
+↓
+
+Deploying
+
+↓
+
+Running
+
+↓
+
+Restarting
+
+↓
+
+Stopped
+
+↓
+
+Deleted
+
+↓
+
+Failed
+```
+
+---
+
+# Runtime Operations
+
+Supported operations
+
+- Deploy
+- Restart
+- Stop
+- Delete
+- Redeploy
+- Check Health
+
+Future
+
+- Rollback
+- Auto Scaling
+
+---
+
+# Version Management
+
+Every deployment creates a version.
+
+Example
+
+```text
+v1.0
+
+↓
+
+v1.1
+
+↓
+
+v1.2
+```
+
+Future
+
+```text
+v1.2
+
+↓
+
+Rollback
+
+↓
+
+v1.1
+```
+
+---
+
+# A2A (Agent-to-Agent) Deployment
+
+A single deployment can contain multiple collaborating agents.
+
+Example
+
+```text
+Repository
+
+↓
+
+Planner Agent
+
+↓
+
+Research Agent
+
+↓
+
+Reviewer Agent
+
+↓
+
+Final Response
+```
+
+The platform deploys the complete workflow as one application.
+
+The client only interacts with
+
+```
+POST /execute
+```
+
+The internal agent communication is managed by the application itself.
+
+---
+
+# Failure Handling
+
+Deployment failures include
+
+- Validation Failed
+- Missing Configuration
+- Build Failed
+- Railway Deployment Failed
+- Runtime Failed
+- Health Check Failed
+
+Every failure is recorded in the Deployment History.
+
+---
+
+# Deployment History
+
+Every deployment stores
+
+```text
+Deployment ID
+
+Repository
+
+Branch
+
+Commit Hash
+
+Version
+
+Status
+
+Created At
+
+Completed At
+
+Cloud Provider
+```
+
+---
+
+# Integration with AgentOps
+
+Deployment events are published during the lifecycle.
+
+Example events
+
+```text
+deployment.created
+
+deployment.started
+
+deployment.completed
+
+runtime.started
+
+runtime.failed
+
+runtime.restarted
+
+health.failed
+```
+
+These events are consumed by the AgentOps service to build deployment history, runtime status, uptime statistics, and operational dashboards.
+
+---
+
+# Future Scope
+
+- Blue-Green Deployment
+- Canary Deployment
+- Multi-Cloud Deployment
+- Zero Downtime Updates
+- Automatic Rollback
+- Kubernetes Support
+- Auto Scaling
+- Scheduled Deployments

@@ -1,140 +1,348 @@
 # 06 - Database Design
 
-## Purpose
+# Overview
 
-The Database Layer is responsible for storing and managing all persistent and temporary data within **R Agent Cloud**. It provides a scalable and reliable storage architecture for platform metadata, AI agent configurations, deployments, runtime information, observability metadata, vector embeddings, caching, and session management.
+The Database Layer is responsible for storing and managing all persistent platform data within **R Agent Cloud**.
 
-The platform follows a **polyglot persistence architecture**, where each database is selected based on its strengths and workload.
+The platform follows a **polyglot persistence architecture**, where each database is optimized for a specific workload.
+
+The database layer stores:
+
+- Platform Metadata
+- Agent Registry
+- Runtime Registry
+- Deployment History
+- User Information
+- Authentication
+- Observability Metadata
+- Runtime State
+- Caching
+- AI Knowledge (Optional)
 
 ---
 
 # Database Architecture
 
-R Agent Cloud uses three different storage technologies.
+R Agent Cloud uses three storage technologies.
 
 | Database | Purpose |
 |----------|---------|
 | PostgreSQL | Primary transactional database |
-| Oracle Database 23ai | AI Vector Database and Semantic Search |
-| Redis | In-memory cache, sessions, runtime state, and queues |
-
-Each database serves a dedicated responsibility to maximize performance and maintainability.
+| Oracle Database 23ai | AI Knowledge Base & Vector Search (Optional Platform Feature) |
+| Redis | Cache, Sessions, Runtime State, Queues |
 
 ---
 
-# Database Responsibilities
+# Architecture
 
-## PostgreSQL
+```text
+                    API Gateway
+                         │
+         ┌───────────────┼────────────────┐
+         ▼               ▼                ▼
+ Deployment Service  Runtime Service  AgentOps Service
+         │               │                │
+         └───────────────┼────────────────┘
+                         ▼
+                   PostgreSQL
+                         │
+         ┌───────────────┼──────────────┐
+         ▼                              ▼
+      Redis                    Oracle 23ai
+```
 
-PostgreSQL is the primary database of the platform and acts as the source of truth.
+---
 
-It stores:
+# PostgreSQL
+
+PostgreSQL is the primary database of the platform.
+
+It stores all business and platform metadata.
+
+## User Management
 
 - Users
 - Organizations
+- Teams
+- API Keys
+- Authentication Metadata
+
+---
+
+## Project Management
+
 - Projects
 - GitHub Repositories
-- AI Agents
-- Agent Configurations
+- Repository Metadata
+- Branch Information
+
+---
+
+## Agent Registry
+
+Stores information about deployed AI applications.
+
+Example
+
+```
+Agent ID
+
+Agent Name
+
+Framework
+
+Repository
+
+Version
+
+Capabilities
+
+Owner
+```
+
+---
+
+## Runtime Registry
+
+Stores runtime information.
+
+Example
+
+```
+Runtime ID
+
+Deployment ID
+
+Runtime URL
+
+Provider
+
+Status
+
+Health
+
+Created At
+
+Updated At
+```
+
+---
+
+## Deployment Management
+
+Stores
+
 - Deployments
-- Runtime Metadata
-- Runtime Instances
-- API Keys
-- Audit Logs
-- Execution History
-- Trace Metadata
 - Deployment Versions
+- Commit Hash
+- Branch
+- Deployment Status
+- Deployment History
 
 ---
 
-## Oracle Database 23ai
+## Runtime Metadata
 
-Oracle Database 23ai provides native AI and vector capabilities.
+Stores
 
-It is responsible for:
+- Runtime URL
+- Public Endpoint
+- Runtime Status
+- Runtime Health
+- Restart Count
 
-- Embedding Storage
-- Vector Indexes
+---
+
+## AgentOps Metadata
+
+Stores
+
+- Runtime Logs
+- Request Metadata
+- Deployment Events
+- Runtime Events
+- Health Events
+- Trace Metadata
+
+---
+
+## Audit Logs
+
+Stores
+
+- User Actions
+- Deployment Actions
+- Runtime Actions
+- Authentication Logs
+
+---
+
+# Oracle Database 23ai
+
+Oracle Database 23ai is used as an **optional AI service**.
+
+Unlike PostgreSQL, Oracle is **not required for every deployment**.
+
+It is used only when platform-managed AI capabilities are enabled.
+
+Examples
+
+- Platform Knowledge Base
 - Semantic Search
-- Retrieval-Augmented Generation (RAG)
-- Long-Term Agent Memory
-- Knowledge Base Storage
-- Enterprise Document Search
-- Similarity Search
-- Context Retrieval
+- Documentation Search
+- Enterprise Search
+- Vector Similarity Search
 
-Oracle Database 23ai allows AI agents to retrieve relevant context using vector similarity search before interacting with an LLM.
+Future Features
+
+- Platform-wide RAG
+- AI Documentation Assistant
+- Intelligent Agent Discovery
+- Knowledge Retrieval
+
+Example
+
+```
+Documents
+
+↓
+
+Embeddings
+
+↓
+
+Oracle 23ai
+
+↓
+
+Semantic Search
+
+↓
+
+Relevant Context
+```
+
+**Note**
+
+User-deployed agents manage their own vector databases and memory. The platform does not automatically store user embeddings.
 
 ---
 
-## Redis
+# Redis
 
-Redis is used as a high-performance in-memory data store.
+Redis provides high-speed in-memory storage.
 
-It is responsible for:
+Responsibilities
 
 - Session Storage
+- Authentication Cache
 - API Rate Limiting
 - Runtime Cache
-- Agent State Cache
-- Frequently Accessed Configurations
+- Runtime State
 - Deployment Queue
 - WebSocket State
 - Temporary Tokens
 - Distributed Locks
 
-Redis improves response times by reducing repeated database queries.
+---
+
+# Database Responsibilities
+
+| Service | Database |
+|----------|----------|
+| API Gateway | PostgreSQL, Redis |
+| Deployment Service | PostgreSQL, Redis |
+| Runtime Service | PostgreSQL, Redis |
+| AgentOps Service | PostgreSQL, Redis |
+| Dashboard | PostgreSQL |
+| AI Knowledge Service | Oracle 23ai |
 
 ---
 
-# High-Level Database Architecture
+# High-Level Database Flow
 
-```mermaid
-flowchart TB
+```text
+User
 
-Gateway --> PostgreSQL
+↓
 
-DeploymentService --> PostgreSQL
+API Gateway
 
-RuntimeService --> PostgreSQL
+↓
 
-Observability --> PostgreSQL
+PostgreSQL
 
-Dashboard --> PostgreSQL
+↓
 
-RuntimeService --> Redis
+Deployment Service
 
-Gateway --> Redis
+↓
 
-Dashboard --> Redis
+Runtime Service
 
-AI_Runtime --> Oracle23AI
+↓
 
-Oracle23AI --> RAG
+Railway
 
-Oracle23AI --> AgentMemory
+↓
+
+AgentOps
+
+↓
+
+Dashboard
 ```
 
+Redis is used throughout the platform for caching and temporary runtime state.
+
+Oracle 23ai is used only for platform AI capabilities.
+
 ---
 
-# Why Multiple Databases?
+# Why Polyglot Persistence?
 
-Instead of forcing every workload into a single database, R Agent Cloud uses specialized storage systems.
+Different workloads require different storage technologies.
 
 | Workload | Database |
 |----------|----------|
-| Platform Metadata | PostgreSQL |
-| Transactions | PostgreSQL |
-| Agent Configuration | PostgreSQL |
+| Users | PostgreSQL |
+| Projects | PostgreSQL |
+| Agent Registry | PostgreSQL |
+| Runtime Registry | PostgreSQL |
+| Deployments | PostgreSQL |
 | Deployment History | PostgreSQL |
 | Runtime Metadata | PostgreSQL |
-| Embeddings | Oracle Database 23ai |
-| Semantic Search | Oracle Database 23ai |
-| Long-Term Memory | Oracle Database 23ai |
-| RAG Retrieval | Oracle Database 23ai |
-| Cache | Redis |
+| AgentOps Metadata | PostgreSQL |
 | Sessions | Redis |
-| WebSocket State | Redis |
+| Runtime Cache | Redis |
 | Rate Limiting | Redis |
+| Deployment Queue | Redis |
+| WebSocket State | Redis |
+| Platform Knowledge Base | Oracle 23ai |
+| Semantic Search | Oracle 23ai |
+| Vector Search | Oracle 23ai |
 
-This architecture provides better scalability and aligns with modern cloud-native platform design.
+---
+
+# Scalability
+
+The database architecture allows each storage engine to scale independently.
+
+- PostgreSQL → Transactional metadata
+- Redis → High-speed cache and runtime state
+- Oracle Database 23ai → AI search and vector operations
+
+This separation improves performance, maintainability, and future scalability while keeping the platform modular.
+
+---
+
+# Future Enhancements
+
+- Multi-region PostgreSQL Replication
+- Redis Cluster
+- Read Replicas
+- Database Backups
+- Automatic Failover
+- Time-Series Metrics Database
+- Data Warehouse for Analytics
+- AI Knowledge Graph

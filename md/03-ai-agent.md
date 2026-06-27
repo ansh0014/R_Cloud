@@ -1,102 +1,451 @@
-# AI Agents
+]# AI Runtime & Agent Architecture
 
-## Overview
+> AI Runtime Architecture for R Agent Cloud
 
-The AI layer is responsible for defining, executing, and coordinating AI agents running on the R Agent Cloud platform.
+---
 
-The cloud platform manages deployment, while this layer manages agent intelligence.
+# Overview
+
+The AI Runtime is responsible for executing AI applications deployed through R Agent Cloud.
+
+The platform itself does not implement the AI logic.
+
+Developers are free to build using:
+
+- LangGraph
+- CrewAI
+- AutoGen
+- Semantic Kernel
+- Pure FastAPI
+- Any Python Framework
+
+As long as the application follows the Runtime Contract.
 
 ---
 
 # Responsibilities
 
-- Agent Design
-- LangGraph Workflows
-- Multi-Agent Communication
+The AI Application is responsible for:
+
+- Agent Execution
+- Multi-Agent Workflows
+- LLM Calls
 - Tool Calling
 - Memory
 - RAG
-- Planning
-- Reasoning
-- LLM Integration
+- Prompt Engineering
+- Business Logic
+
+The platform is responsible for:
+
+- Deployment
+- Runtime Management
+- Health Monitoring
+- Runtime Registration
+- Endpoint Management
+- Agent Registry
+- AgentOps
 
 ---
 
-# Agent Components
+# Runtime Contract
 
-Every agent consists of:
+Every AI application exposes the following endpoints.
 
-- Profile
-- Model
-- Memory
-- Tools
-- Planner
-- Reasoning Engine
-- Output Handler
+```
+POST /execute
 
----
+POST /stream
 
-# Multi-Agent System
+GET /health
 
-The platform supports multiple collaborating agents.
-
-Example agents include:
-
-- Planner Agent
-- Research Agent
-- Coding Agent
-- Reviewer Agent
-
-Each agent performs a dedicated task and communicates with other agents when necessary.
+GET /metadata
+```
 
 ---
 
-# Memory
+# Endpoint Description
 
-The AI runtime supports:
+## POST /execute
 
-- Conversation History
-- Short-Term Memory
-- Long-Term Memory
-- Vector Database
-- Retrieval-Augmented Generation (RAG)
+Execute the AI application.
+
+Request
+
+```json
+{
+    "input":"Research latest AI trends"
+}
+```
+
+Response
+
+```json
+{
+    "output":"..."
+}
+```
+
+---
+
+## POST /stream
+
+Returns streaming responses.
+
+---
+
+## GET /health
+
+Returns runtime health.
+
+Example
+
+```json
+{
+    "status":"healthy"
+}
+```
+
+---
+
+## GET /metadata
+
+Returns application metadata.
+
+Example
+
+```json
+{
+    "name":"Research Agent",
+    "framework":"LangGraph",
+    "version":"1.0.0",
+    "capabilities":[
+        "chat",
+        "rag"
+    ]
+}
+```
+
+---
+
+# AI Application Structure
+
+Example
+
+```
+customer-support/
+
+├── app.py
+├── requirements.txt
+├── ragent.yaml
+├── agents/
+├── prompts/
+├── tools/
+├── memory/
+└── workflows/
+```
+
+---
+
+# Supported Frameworks
+
+- LangGraph
+- CrewAI
+- AutoGen
+- Semantic Kernel
+- Pure Python
+
+---
+
+# Single Agent Deployment
+
+```
+User
+
+↓
+
+Execute
+
+↓
+
+AI Agent
+
+↓
+
+LLM
+
+↓
+
+Response
+```
+
+---
+
+# A2A (Agent-to-Agent) Deployment
+
+A repository can contain multiple collaborating agents.
+
+Example
+
+```
+                Client
+                   │
+                   ▼
+              POST /execute
+                   │
+                   ▼
+            Planner Agent
+              /         \
+             ▼           ▼
+   Research Agent   Database Agent
+             \         /
+              ▼       ▼
+          Reviewer Agent
+                   │
+                   ▼
+            Final Response
+```
+
+The client never communicates with individual agents.
+
+Only the Runtime Contract is exposed.
+
+---
+
+# Example A2A Repository
+
+```
+customer-support/
+
+├── planner.py
+├── researcher.py
+├── reviewer.py
+├── app.py
+└── ragent.yaml
+```
+
+---
+
+# Example ragent.yaml
+
+```yaml
+application:
+  name: customer-support
+
+agents:
+
+  - id: planner
+    entrypoint: planner.py
+
+  - id: researcher
+    entrypoint: researcher.py
+
+  - id: reviewer
+    entrypoint: reviewer.py
+
+workflow:
+
+  planner:
+    - researcher
+
+  researcher:
+    - reviewer
+
+routes:
+
+  execute: /execute
+
+  stream: /stream
+
+  health: /health
+
+  metadata: /metadata
+```
+
+---
+
+# Execution Flow
+
+```
+Client
+
+↓
+
+POST /execute
+
+↓
+
+Planner
+
+↓
+
+Research
+
+↓
+
+Reviewer
+
+↓
+
+Response
+```
 
 ---
 
 # Tool Calling
 
-Agents can interact with external tools such as:
+Tools are implemented inside the application.
 
-- Web Search
-- Databases
-- APIs
-- Calculators
-- File Systems
+Example
 
-The runtime manages tool execution and returns results back to the agent.
+```
+User
+
+↓
+
+Planner
+
+↓
+
+Search Tool
+
+↓
+
+Calculator
+
+↓
+
+Database
+
+↓
+
+Response
+```
 
 ---
 
-# Runtime Responsibilities
+# Memory
 
-- Receive requests from the platform
-- Execute workflows
-- Coordinate multiple agents
-- Access memory
-- Retrieve context through RAG
-- Call external tools
-- Generate final responses
-- Emit telemetry events
+Applications may implement
+
+- Conversation Memory
+- Long-Term Memory
+- Session Memory
 
 ---
 
-# AI Team Responsibilities
+# RAG
 
-- Design workflows
-- Build agent logic
-- Implement RAG
-- Configure memory
-- Manage prompts
-- Integrate LLM providers
-- Optimize reasoning and planning
-- Ensure agent collaboration
+Applications may implement
+
+```
+Documents
+
+↓
+
+Embeddings
+
+↓
+
+Vector Database
+
+↓
+
+Retriever
+
+↓
+
+LLM
+```
+
+---
+
+# Metadata
+
+Every application provides metadata through
+
+```
+GET /metadata
+```
+
+Example
+
+```
+Application
+
+Framework
+
+Version
+
+Capabilities
+
+Owner
+
+Runtime Version
+```
+
+The platform stores this in the Agent Registry.
+
+---
+
+# Health Checks
+
+The Runtime Service periodically calls
+
+```
+GET /health
+```
+
+Possible states
+
+- Healthy
+- Starting
+- Unhealthy
+- Stopped
+
+---
+
+# AI Runtime Lifecycle
+
+```
+Repository
+
+↓
+
+Deployment
+
+↓
+
+Runtime Started
+
+↓
+
+Health Check
+
+↓
+
+Runtime Registered
+
+↓
+
+Ready
+
+↓
+
+Execute Requests
+
+↓
+
+Runtime Monitoring
+```
+
+---
+
+# Future Scope
+
+- Multi-LLM Support
+- MCP Support
+- Multi-Cloud Runtime
+- Agent Versioning
+- Runtime Rollback
+- Auto Scaling

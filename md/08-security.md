@@ -1,378 +1,265 @@
-# 08 - Security
+# 08 - Security Architecture
 
-## Purpose
-
-The Security Layer protects the R Agent Cloud platform, its users, deployed AI agents, and all associated resources. It provides authentication, authorization, secure communication, secret management, audit logging, and infrastructure security.
-
-The security architecture follows the principle of **Zero Trust**, where every request is authenticated, authorized, and validated before accessing platform resources.
+> Security Model of R Agent Cloud
 
 ---
 
-# Security Goals
+# Overview
 
-- Secure user authentication
-- Fine-grained authorization
-- Secure API access
-- Protect deployed AI agents
-- Secure communication between services
-- Secure secret management
-- Prevent abuse through rate limiting
-- Maintain audit trails
-- Ensure compliance with security best practices
+Security is a core component of R Agent Cloud.
+
+The platform protects users, repositories, deployments, runtime infrastructure, and platform APIs through multiple security layers.
+
+The security model includes:
+
+- Authentication
+- Authorization
+- API Security
+- Runtime Isolation
+- Secret Management
+- Deployment Validation
+- Audit Logging
 
 ---
 
 # Security Architecture
 
-```mermaid
-flowchart LR
-
-Client --> Cloudflare
-
-Cloudflare --> API_Gateway
-
-API_Gateway --> Auth_Service
-
-Auth_Service --> PostgreSQL
-
-API_Gateway --> RBAC
-
-RBAC --> Services
-
-Services --> Audit_Logs
-
-Services --> Secret_Manager
+```text
+                Client
+                   │
+                   ▼
+             Cloudflare WAF
+                   │
+                   ▼
+              API Gateway
+                   │
+      ┌────────────┼─────────────┐
+      ▼            ▼             ▼
+ Authentication  Authorization  Rate Limiting
+                   │
+                   ▼
+           Backend Services
+                   │
+                   ▼
+             Railway Runtime
 ```
 
 ---
 
 # Authentication
 
-R Agent Cloud supports multiple authentication methods.
+The platform uses JWT Authentication.
 
-## Email & Password
+Flow
 
-Users can authenticate using their email address and password.
+```text
+User
 
-Passwords are:
+↓
 
-- Never stored in plain text
-- Hashed using bcrypt
-- Salted before storage
+Login
 
----
+↓
 
-## OAuth 2.0
+JWT Generated
 
-Supported providers:
+↓
 
-- GitHub
-- Google (Future)
-- Microsoft (Future)
+API Requests
 
-OAuth is primarily used for:
+↓
 
-- User Login
-- GitHub Repository Integration
+JWT Validation
+```
 
----
+Every authenticated request must include
 
-## JWT Authentication
-
-After successful authentication, the platform issues:
-
-- Access Token
-- Refresh Token
-
-Access Token
-
-- Short-lived
-- Used for API requests
-
-Refresh Token
-
-- Long-lived
-- Used to obtain a new access token
+```
+Authorization: Bearer <JWT_TOKEN>
+```
 
 ---
 
-# Authorization (RBAC)
+# Authorization
 
-The platform uses **Role-Based Access Control (RBAC)**.
+Role-Based Access Control (RBAC)
 
-## Roles
+Supported Roles
 
-| Role | Permissions |
-|-------|-------------|
-| Owner | Full access |
-| Admin | Manage organization and projects |
-| Developer | Deploy and manage agents |
-| Viewer | Read-only access |
+- Owner
+- Admin
+- Developer
+- Viewer
 
----
+Permissions
 
-# Resource Permissions
-
-Resources include:
-
-- Projects
-- Agents
-- Deployments
-- Runtime Instances
-- API Keys
-- Dashboards
-- Logs
-- Metrics
-
-Every request checks whether the authenticated user has permission to access the requested resource.
+| Resource | Owner | Admin | Developer | Viewer |
+|----------|-------|--------|------------|---------|
+| Projects | ✅ | ✅ | ✅ | Read |
+| Deployments | ✅ | ✅ | ✅ | Read |
+| Runtime | ✅ | ✅ | Restart | Read |
+| AgentOps | ✅ | ✅ | Read | Read |
+| API Keys | ✅ | Manage | No | No |
 
 ---
 
 # API Security
 
-Every REST API request passes through:
+Every request passes through
 
-1. Authentication
-2. JWT Validation
-3. Authorization
-4. Input Validation
-5. Rate Limiting
-6. Audit Logging
+- JWT Validation
+- API Key Validation
+- Rate Limiting
+- Input Validation
+- Request Logging
 
 ---
 
-# API Keys
+# GitHub Security
 
-Projects can generate API Keys for programmatic access.
+Repository access is secured using GitHub OAuth.
 
-Each API Key contains:
+The platform stores only the minimum required repository metadata.
 
-- Unique Identifier
-- Hashed Secret
-- Owner
-- Expiration Date
-- Scope
-
-Example scopes:
-
-- deployments:read
-- deployments:write
-- runtime:execute
-- metrics:read
+GitHub Webhooks are validated using webhook secrets before processing deployment events.
 
 ---
 
 # Secret Management
 
-Sensitive values are never stored inside source code.
+Sensitive values are never stored inside repositories.
 
-Secrets include:
+Examples
 
 - OpenAI API Keys
-- Anthropic API Keys
+- Anthropic Keys
+- Database Passwords
 - GitHub Tokens
-- Oracle Database Credentials
-- PostgreSQL Credentials
-- Redis Credentials
-- JWT Secret
-- OAuth Credentials
+- JWT Secrets
 
-Secrets are loaded through environment variables or a dedicated secret manager.
+Secrets are injected into the runtime during deployment through Railway environment variables.
 
 ---
 
-# Secure Communication
+# Runtime Isolation
 
-## External Communication
+Each deployment runs independently.
 
-All external communication uses HTTPS with TLS.
+```
+Deployment A
 
-Examples:
+↓
 
-- Dashboard
-- REST APIs
-- GitHub Webhooks
+Runtime A
 
----
+-----------------
 
-## Internal Communication
+Deployment B
 
-Microservices communicate through:
+↓
 
-- gRPC over TLS
+Runtime B
+```
 
-This encrypts all service-to-service traffic.
-
----
-
-# GitHub Webhook Security
-
-Incoming GitHub webhooks are verified before processing.
-
-Validation includes:
-
-- Signature Verification
-- Event Type Validation
-- Repository Validation
-- Timestamp Validation
-
-Invalid requests are immediately rejected.
+This prevents deployments from affecting each other.
 
 ---
 
-# Input Validation
+# Deployment Validation
 
-Every API request validates:
+Before deployment the platform validates
 
-- JSON Schema
-- YAML Schema
-- Request Size
-- Required Fields
-- Supported Values
+- ragent.yaml
+- Repository Structure
+- Runtime Contract
+- Required Endpoints
+- Environment Configuration
 
-Invalid input returns a validation error before reaching the business logic.
+Invalid projects are rejected before deployment.
+
+---
+
+# HTTPS
+
+All communication uses HTTPS.
+
+Protected communications
+
+- Frontend → Gateway
+- Gateway → Services
+- Services → Railway
+- Webhooks
 
 ---
 
 # Rate Limiting
 
-Rate limiting protects the platform from abuse.
+API Gateway applies rate limiting.
 
-Redis is used to track request counts.
+Example
 
-Example policy:
+```
+100 Requests / Minute / User
+```
 
-| Endpoint | Limit |
-|----------|-------|
-| Authentication | 10 requests/minute |
-| Deployment | 20 requests/minute |
-| Runtime Execution | 100 requests/minute |
-| Public APIs | Configurable |
+Protects against
 
----
-
-# Agent Isolation
-
-Each deployed agent executes inside an isolated runtime.
-
-Isolation ensures:
-
-- Independent execution
-- No shared runtime state
-- Fault isolation
-- Improved security
-
-Future versions may isolate agents using containers.
+- Abuse
+- DDoS
+- Brute Force
 
 ---
 
-# Audit Logging
+# Audit Logs
 
-Security-sensitive actions are recorded.
+Every important action is recorded.
 
-Examples:
+Examples
 
-- User Login
-- Failed Login
-- Project Creation
-- Agent Deployment
-- API Key Generation
-- API Key Revocation
-- Role Updates
-- Secret Updates
-
-Each audit log contains:
-
-- User ID
-- Timestamp
-- Action
-- Resource
-- IP Address
-- Result
+- Login
+- Logout
+- Project Created
+- Repository Connected
+- Deployment Started
+- Deployment Deleted
+- Runtime Restarted
+- API Key Created
 
 ---
 
-# Data Protection
+# OpenTelemetry Security
 
-Sensitive information is encrypted or hashed.
+OpenTelemetry traces never contain
 
-| Data | Protection |
-|------|------------|
-| Passwords | bcrypt |
-| API Keys | SHA-256 Hash |
-| OAuth Tokens | Encryption |
-| Secrets | Secret Manager |
-| HTTPS Traffic | TLS |
+- Passwords
+- API Keys
+- Secrets
+- Tokens
 
----
-
-# CORS Policy
-
-Allowed origins:
-
-- Platform Dashboard
-- Trusted Applications
-
-All other origins are rejected unless explicitly configured.
+Sensitive fields are masked before export.
 
 ---
 
-# Security Headers
+# Security Best Practices
 
-The API Gateway adds common security headers:
-
-- Content-Security-Policy
-- Strict-Transport-Security
-- X-Frame-Options
-- X-Content-Type-Options
-- Referrer-Policy
-
----
-
-# Logging & Monitoring
-
-Security events are monitored through the Observability Service.
-
-Examples:
-
-- Authentication failures
-- Unauthorized requests
-- Rate limit violations
-- Invalid webhooks
-- Runtime failures
-
-These events are exported through OpenTelemetry.
+- HTTPS Everywhere
+- JWT Authentication
+- RBAC
+- API Rate Limiting
+- Secret Isolation
+- Input Validation
+- Audit Logging
+- Secure Webhooks
+- Runtime Isolation
 
 ---
 
 # Future Enhancements
 
 - Multi-Factor Authentication (MFA)
-- Single Sign-On (SSO)
-- Hardware Security Module (HSM)
-- WebAuthn / Passkeys
-- Fine-Grained Permissions (ABAC)
-- Secrets Rotation
-- IP Allow Lists
-- Security Compliance Reports
-- Threat Detection
-
----
-
-# Security Best Practices
-
-- Principle of Least Privilege
-- Zero Trust Architecture
-- Encryption in Transit
-- Encryption at Rest
-- Secure Secret Storage
-- Continuous Audit Logging
-- Input Validation
-- Dependency Scanning
-- Regular Security Reviews
-
----
-
-# Summary
-
-The Security Layer ensures that R Agent Cloud is secure by design. It combines JWT authentication, OAuth integration, RBAC authorization, encrypted communication, secure secret management, API protection, audit logging, and runtime isolation to protect users, AI agents, and platform infrastructure while maintaining a scalable cloud-native architecture.
+- SSO
+- Vault Integration
+- Secret Rotation
+- End-to-End Encryption
+- Policy Engine (OPA)
+- Security Dashboard

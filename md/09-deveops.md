@@ -1,354 +1,426 @@
 # 09 - DevOps & Infrastructure
 
-## Purpose
-
-The DevOps & Infrastructure layer is responsible for building, deploying, scaling, monitoring, and maintaining the R Agent Cloud platform. It provides a cloud-native deployment pipeline that automates application delivery while ensuring reliability, scalability, and high availability.
-
-This layer enables continuous integration, continuous deployment (CI/CD), containerization, infrastructure automation, and production monitoring.
+> Cloud Infrastructure, CI/CD, Runtime Management, and Operations for R Agent Cloud
 
 ---
 
-# Goals
+# Overview
 
-- Automated Deployment
-- Continuous Integration
-- Continuous Delivery
-- Infrastructure as Code
-- High Availability
-- Zero-Downtime Deployments
-- Scalability
-- Production Monitoring
-- Disaster Recovery
+The DevOps layer is responsible for deploying, operating, monitoring, and maintaining AI applications running on R Agent Cloud.
 
----
+The platform separates responsibilities into dedicated services.
 
-# Infrastructure Overview
-
-```mermaid
-flowchart LR
-
-Developer --> GitHub
-
-GitHub --> GitHubActions
-
-GitHubActions --> Docker
-
-Docker --> ContainerRegistry
-
-ContainerRegistry --> Railway
-
-Railway --> APIGateway
-
-Railway --> RuntimeService
-
-Railway --> DeploymentService
-
-Railway --> ObservabilityService
-
-Railway --> PostgreSQL
-
-Railway --> Redis
-
-Railway --> Oracle23AI
-```
-
----
-
-# Development Environment
-
-## Local Development
-
-Developers use Docker Compose to start all required services locally.
-
-Services include:
-
-- API Gateway
 - Deployment Service
 - Runtime Service
-- Observability Service
-- PostgreSQL
-- Redis
-- OpenTelemetry Collector
-- Prometheus
-- Grafana
+- AgentOps Service
+
+This separation makes the platform scalable and cloud-provider independent.
 
 ---
 
-# Containerization
-
-Every microservice is packaged into an independent Docker image.
-
-Example services:
-
-- api-gateway
-- deployment-service
-- runtime-service
-- observability-service
-- frontend
-
-Each service follows the same deployment process.
-
----
-
-# Docker Structure
+# Infrastructure Architecture
 
 ```text
-services/
-
-├── api-gateway/
-│   └── Dockerfile
-│
-├── deployment-service/
-│   └── Dockerfile
-│
-├── runtime-service/
-│   └── Dockerfile
-│
-├── observability-service/
-│   └── Dockerfile
-│
-└── frontend/
-    └── Dockerfile
+                    Users
+                      │
+                      ▼
+                 Cloudflare
+                      │
+                      ▼
+                 API Gateway
+                      │
+      ┌───────────────┼────────────────┐
+      ▼               ▼                ▼
+Deployment      Runtime Service   AgentOps Service
+ Service
+      │               │                │
+      └───────────────┼────────────────┘
+                      ▼
+               PostgreSQL + Redis
+                      │
+                      ▼
+                 Railway Cloud
+                      │
+                      ▼
+           Running AI Applications
 ```
 
 ---
 
-# Docker Compose
+# Platform Components
 
-Docker Compose is used for local development.
-
-It starts:
-
-- PostgreSQL
-- Redis
-- Oracle Database 23ai (Development Instance)
-- OpenTelemetry Collector
-- Prometheus
-- Grafana
-- All Backend Services
-- Frontend
-
-This provides a complete local environment for testing.
+| Component | Responsibility |
+|------------|----------------|
+| Cloudflare | DNS, SSL, CDN, WAF |
+| API Gateway | Authentication, Routing, Rate Limiting |
+| Deployment Service | Repository Validation & Deployment |
+| Runtime Service | Runtime Lifecycle Management |
+| AgentOps Service | Monitoring & Observability |
+| PostgreSQL | Platform Metadata |
+| Redis | Cache & Runtime State |
+| Railway | AI Runtime Execution |
+| OpenTelemetry | Distributed Tracing |
 
 ---
 
 # CI/CD Pipeline
 
-GitHub Actions automates the deployment process.
+```text
+Developer
 
-Pipeline stages:
+↓
 
-1. Checkout Source Code
-2. Install Dependencies
-3. Run Unit Tests
-4. Run Linting
-5. Build Docker Images
-6. Push Images to Container Registry
-7. Deploy Services
-8. Verify Deployment
-9. Notify Team
+Push Code
+
+↓
+
+GitHub
+
+↓
+
+Webhook
+
+↓
+
+Deployment Service
+
+↓
+
+Clone Repository
+
+↓
+
+Validate ragent.yaml
+
+↓
+
+Runtime Service
+
+↓
+
+Deploy to Railway
+
+↓
+
+Health Check
+
+↓
+
+Register Runtime
+
+↓
+
+Ready
+```
+
+---
+
+# Deployment Service
+
+Responsibilities
+
+- GitHub Integration
+- Repository Cloning
+- AI Project Validation
+- Version Management
+- Deployment Orchestration
+- Trigger Runtime Deployment
+
+---
+
+# Runtime Service
+
+Responsibilities
+
+- Deploy Runtime
+- Restart Runtime
+- Stop Runtime
+- Delete Runtime
+- Health Monitoring
+- Runtime Registry
+- Railway Integration
+
+Supported Operations
+
+- Deploy
+- Restart
+- Stop
+- Delete
+- Redeploy
+
+---
+
+# AgentOps Service
+
+Responsibilities
+
+- Runtime Monitoring
+- Deployment History
+- Runtime Logs
+- Runtime Metrics
+- Runtime Health
+- Dashboard
+- OpenTelemetry Integration
+
+---
+
+# Railway
+
+Railway is used only as the **execution layer**.
+
+Responsibilities
+
+- Run AI Applications
+- Manage Containers
+- Environment Variables
+- Runtime Logs
+- Runtime Networking
+
+R Agent Cloud manages deployments.
+
+Railway executes them.
+
+---
+
+# Cloudflare
+
+Responsibilities
+
+- DNS
+- HTTPS
+- CDN
+- DDoS Protection
+- Web Application Firewall (WAF)
+
+---
+
+# OpenTelemetry
+
+Instrumented Services
+
+- API Gateway
+- Deployment Service
+- Runtime Service
+- AgentOps Service
+
+Collected Data
+
+- HTTP Requests
+- gRPC Calls
+- Database Queries
+- Errors
+- Latency
+- Request Traces
+
+---
+
+# Health Monitoring
+
+Every deployed application exposes
+
+```text
+GET /health
+```
+
+Runtime Service periodically checks
+
+```text
+Healthy
+
+↓
+
+Running
+```
+
+or
+
+```text
+Unhealthy
+
+↓
+
+Restart Runtime
+
+↓
+
+Recheck
+```
+
+---
+
+# Runtime Lifecycle
+
+```text
+Created
+
+↓
+
+Deploying
+
+↓
+
+Running
+
+↓
+
+Restarting
+
+↓
+
+Stopped
+
+↓
+
+Deleted
+```
+
+---
+
+# Logging
+
+Log Sources
+
+- API Gateway
+- Deployment Service
+- Runtime Service
+- Railway Runtime
+
+Logs are aggregated into the AgentOps dashboard.
+
+---
+
+# Runtime Registry
+
+Each deployment stores
+
+- Runtime ID
+- Runtime URL
+- Provider
+- Status
+- Health
+- Created Time
+- Last Health Check
 
 ---
 
 # Deployment Strategy
 
-For the MVP, services are deployed on Railway.
+Current
 
-Responsibilities of Railway:
+```text
+GitHub
 
-- Container Hosting
-- Automatic HTTPS
-- Environment Variables
-- Service Networking
-- Automatic Restarts
-- Horizontal Scaling
+↓
 
-Future versions may migrate to Kubernetes.
-
----
-
-# Environment Management
-
-Each environment has independent configuration.
-
-Supported environments:
-
-- Development
-- Testing
-- Staging
-- Production
-
-Configuration is managed through environment variables.
-
----
-
-# Configuration Management
-
-Application configuration includes:
-
-- Database URLs
-- Redis URL
-- Oracle Database URL
-- JWT Secret
-- GitHub OAuth
-- OpenAI API Keys
-- Anthropic API Keys
-- OpenTelemetry Endpoint
-
-Sensitive values are never committed to source control.
-
----
-
-# Infrastructure Components
-
-| Component | Technology |
-|-----------|------------|
-| Source Control | GitHub |
-| CI/CD | GitHub Actions |
-| Containerization | Docker |
-| Local Development | Docker Compose |
-| Cloud Platform | Railway |
-| Edge Layer | Cloudflare Workers |
-| Monitoring | Grafana |
-| Metrics | Prometheus |
-| Tracing | OpenTelemetry |
-| Logging | OpenTelemetry Collector |
-
----
-
-# Scaling Strategy
-
-The platform is designed using stateless microservices.
-
-Each service can scale independently.
-
-Examples:
-
-- API Gateway
-- Runtime Service
-- Deployment Service
-- Observability Service
-
-Future versions will support automatic horizontal scaling.
-
----
-
-# Health Checks
-
-Every service exposes a health endpoint.
-
-Example:
-
-```http
-GET /health
+Railway
 ```
 
-Health information includes:
+Future
 
-- Service Status
-- Database Connectivity
-- Redis Connectivity
-- External API Status
-- Runtime Health
+```text
+GitHub
 
----
+↓
 
-# Logging Strategy
+Runtime Service
 
-Every service produces structured logs.
+↓
 
-Logs include:
+Railway
 
-- Timestamp
-- Service Name
-- Request ID
-- Trace ID
-- Log Level
-- Message
+Render
 
-Logs are exported to the Observability platform.
+Kubernetes
 
----
+AWS ECS
+```
 
-# Monitoring
+Only the Runtime Service changes.
 
-Infrastructure metrics include:
-
-- CPU Usage
-- Memory Usage
-- Disk Usage
-- Network Traffic
-- Request Rate
-- Error Rate
-- Response Time
-
-These metrics are visualized through Grafana dashboards.
+The rest of the platform remains unchanged.
 
 ---
 
-# Backup & Recovery
+# Backup Strategy
 
-The platform supports scheduled backups.
+PostgreSQL
 
-Backup targets:
+- Daily Backup
+- Point-in-Time Recovery
 
+Redis
+
+- Snapshot Backup
+
+Platform Metadata
+
+- Runtime Registry
+- Agent Registry
+- Deployment History
+
+---
+
+# Scalability
+
+Each service scales independently.
+
+- API Gateway
+- Deployment Service
+- Runtime Service
+- AgentOps Service
 - PostgreSQL
-- Oracle Database 23ai
-- Configuration Files
+- Redis
 
-Recovery objectives:
-
-- Database restoration
-- Configuration restoration
-- Deployment rollback
+This allows the platform to handle increasing deployments without affecting other services.
 
 ---
 
-# Disaster Recovery
+# Failure Recovery
 
-Recovery strategy includes:
+Failure Scenarios
 
-- Automated backups
-- Deployment rollback
-- Service restart
-- Database recovery
-- Infrastructure recreation
+- Deployment Failure
+- Runtime Failure
+- Railway Failure
+- Database Failure
+- Service Crash
 
----
+Recovery Actions
 
-# Production Readiness Checklist
-
-- Dockerized Services
-- CI/CD Pipeline
-- HTTPS Enabled
-- Environment Isolation
-- Monitoring Enabled
-- Centralized Logging
-- Database Backups
-- Health Checks
-- Secure Secrets Management
-- Rate Limiting
-- API Versioning
+- Automatic Health Check
+- Runtime Restart
+- Redeployment
+- Database Restore
+- Retry Deployment
 
 ---
 
 # Future Roadmap
 
-Future infrastructure improvements include:
-
-- Kubernetes Deployment
-- Helm Charts
-- Infrastructure as Code (Terraform)
-- Multi-Region Deployment
+- Kubernetes Support
+- Render Support
+- AWS ECS Support
+- Blue-Green Deployment
+- Canary Deployment
 - Auto Scaling
-- Blue-Green Deployments
-- Canary Releases
-- Service Mesh (Istio)
-- Multi-Cloud Support
-- GitOps with ArgoCD
+- GitOps
+- Infrastructure as Code (Terraform)
+- CI/CD Automation
+- Prometheus Integration
+- Grafana Integration
+- Multi-Region Deployment
 
 ---
 
 # Summary
 
-The DevOps & Infrastructure layer provides the operational foundation for R Agent Cloud. Using Docker, Docker Compose, GitHub Actions, Railway, Cloudflare Workers, OpenTelemetry, Prometheus, and Grafana, it enables automated deployments, reliable service management, monitoring, scalability, and production-ready cloud infrastructure while keeping the MVP simple enough to develop and maintain.
+The DevOps architecture separates deployment, runtime management, and operational monitoring into independent services.
+
+- **Deployment Service** orchestrates deployments.
+- **Runtime Service** manages AI runtimes on Railway.
+- **AgentOps Service** provides monitoring, logging, health checks, and observability.
+- **Railway** acts as the execution environment.
+- **Cloudflare** secures external traffic.
+- **OpenTelemetry** provides end-to-end tracing across the platform.
+
+This architecture is cloud-native, scalable, modular, and can be extended to multiple cloud providers without changing the overall platform design.

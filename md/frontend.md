@@ -1,91 +1,60 @@
-# 10 - Frontend
+# 10 - Frontend Architecture
 
-## Purpose
-
-The Frontend serves as the primary interface between developers and the R Agent Cloud platform. It enables users to create projects, deploy AI agents, monitor deployments, inspect traces, manage infrastructure, and analyze runtime performance through a unified dashboard.
-
-The frontend focuses on providing a modern, responsive, and real-time experience while communicating with backend services through REST APIs and WebSockets.
+> User Interface and Dashboard Architecture for R Agent Cloud
 
 ---
 
-# Goals
+# Overview
 
-- Simple User Experience
-- Real-Time Monitoring
-- Agent Deployment
-- Deployment Management
-- AI Agent Visualization
-- Runtime Analytics
-- Cost Monitoring
-- Project Management
-- Responsive Dashboard
+The Frontend is the primary interface through which users interact with R Agent Cloud.
+
+It provides a centralized dashboard for managing AI applications throughout their lifecycle.
+
+Users can:
+
+- Create Projects
+- Connect GitHub Repositories
+- Deploy AI Applications
+- Monitor Runtime Health
+- View Deployment History
+- Manage Runtimes
+- View Agent Registry
+- Monitor AgentOps
+- Configure Account Settings
 
 ---
 
 # Technology Stack
 
-| Layer | Technology |
-|--------|------------|
-| Framework | Next.js |
-| Language | TypeScript |
-| UI Library | React |
-| Styling | Tailwind CSS |
-| Components | shadcn/ui |
-| State Management | Zustand |
-| Data Fetching | TanStack Query |
-| Forms | React Hook Form |
-| Charts | Recharts |
-| Graph Visualization | React Flow |
-| Icons | Lucide React |
-| Real-Time | WebSockets |
-| Authentication | JWT + OAuth |
+| Technology | Purpose |
+|------------|---------|
+| Next.js | Frontend Framework |
+| React | UI Library |
+| TypeScript | Type Safety |
+| Tailwind CSS | Styling |
+| shadcn/ui | UI Components |
+| TanStack Query | API State Management |
+| Zustand | Client State |
+| WebSocket | Real-time Updates |
+| Recharts | Analytics Charts |
 
 ---
 
 # Frontend Architecture
 
-```mermaid
-flowchart LR
-
-Browser
-
-Browser --> NextJS
-
-NextJS --> RESTAPI
-
-NextJS --> WebSocket
-
-RESTAPI --> API_Gateway
-
-WebSocket --> Observability_Service
-```
-
----
-
-# Application Structure
-
 ```text
-frontend/
-│
-├── app/
-│
-├── components/
-│
-├── features/
-│
-├── hooks/
-│
-├── services/
-│
-├── store/
-│
-├── lib/
-│
-├── types/
-│
-├── styles/
-│
-└── public/
+                    User
+                      │
+                      ▼
+                 Next.js App
+                      │
+        ┌─────────────┼──────────────┐
+        ▼             ▼              ▼
+    REST APIs     WebSockets     Authentication
+        │             │              │
+        └─────────────┼──────────────┘
+                      ▼
+                 API Gateway
 ```
 
 ---
@@ -94,372 +63,532 @@ frontend/
 
 ## Authentication
 
-- Login
-- Register
-- Forgot Password
-- OAuth Login
+```
+/login
+
+/register
+
+/forgot-password
+```
 
 ---
 
 ## Dashboard
 
-Displays overall platform statistics.
+```
+/
+```
 
-Features:
+Displays
 
-- Active Projects
-- Active Agents
-- Deployments
+- Total Projects
+- Running Deployments
+- Active Runtimes
 - Runtime Health
-- Cost Summary
-- Recent Activities
+- Deployment Activity
 
 ---
 
 ## Projects
 
-Users can:
+```
+/projects
+```
+
+Features
 
 - Create Project
 - Delete Project
-- Connect GitHub Repository
-- View Project Details
-
----
-
-## Agent Management
-
-Users can:
-
-- Create Agent
-- Update Agent
-- Delete Agent
-- Configure Runtime
-- View Agent Details
-
----
-
-## Deployment Dashboard
-
-Displays:
-
+- Connect GitHub
+- View Repository
 - Deployment Status
-- Deployment History
-- Runtime Version
-- Rollback
-- Deployment Logs
 
 ---
 
-## Runtime Dashboard
+## Project Details
 
-Displays:
-
-- Runtime Status
-- CPU Usage
-- Memory Usage
-- Active Requests
-- Runtime Logs
-
----
-
-## Observability Dashboard
-
-Displays:
-
-- Metrics
-- Traces
-- Logs
-- Token Usage
-- API Cost
-- Error Rate
-- Response Time
-
----
-
-## Trace Explorer
-
-Allows developers to inspect complete execution traces.
-
-Displays:
-
-- Trace Timeline
-- Span Details
-- Tool Calls
-- LLM Requests
-- Execution Duration
-
----
-
-## AI Agent Visualization
-
-Displays communication between multiple AI agents.
-
-Example:
-
-```text
-Planner
-
-↓
-
-Research
-
-↓
-
-Tool
-
-↓
-
-Reviewer
-
-↓
-
-Response
+```
+/projects/:id
 ```
 
-Built using **React Flow**.
+Displays
+
+- Repository
+- Branch
+- Deployment History
+- Runtime
+- Agent Metadata
+- Runtime URL
+
+Actions
+
+- Deploy
+- Redeploy
+- Delete
 
 ---
 
-## Knowledge Base
+## Deployments
 
-Allows users to:
+```
+/deployments
+```
 
-- Upload Documents
-- Manage Knowledge Base
-- View Embeddings
-- Manage RAG Sources
+Displays
+
+- Deployment ID
+- Status
+- Version
+- Runtime
+- Timestamp
+
+Actions
+
+- Redeploy
+- Restart Runtime
+- Delete
+
+---
+
+## Runtime Management
+
+```
+/runtimes
+```
+
+Displays
+
+- Runtime URL
+- Runtime Status
+- Health
+- Provider
+- Version
+- Uptime
+
+Actions
+
+- Restart
+- Stop
+- Delete
+
+---
+
+## Agent Registry
+
+```
+/agents
+```
+
+Displays
+
+- Agent Name
+- Framework
+- Version
+- Capabilities
+- Runtime
+- Deployment
+
+---
+
+## Agent Details
+
+```
+/agents/:id
+```
+
+Displays
+
+- Framework
+- Version
+- Runtime Contract
+- Metadata
+- Runtime Health
+- Deployment History
+
+---
+
+## AgentOps Dashboard
+
+```
+/agentops
+```
+
+Displays
+
+### Runtime Health
+
+- Healthy
+- Starting
+- Failed
+- Stopped
+
+---
+
+### Runtime Metrics
+
+- Total Requests
+- Success Rate
+- Failure Rate
+- Average Latency
+- Runtime Uptime
+
+---
+
+### Deployments
+
+- Successful
+- Failed
+- Running
+- Pending
+
+---
+
+### Runtime Logs
+
+Live logs streamed through WebSockets.
+
+---
+
+### Deployment History
+
+Timeline of all deployments.
+
+---
+
+### Traces
+
+OpenTelemetry traces
+
+- Gateway
+- Deployment
+- Runtime
+- AgentOps
 
 ---
 
 ## Settings
 
-Manage:
+```
+/settings
+```
+
+Manage
 
 - Profile
+- GitHub Connection
 - API Keys
-- Organizations
-- Team Members
-- Billing
-- Integrations
+- Preferences
 
 ---
 
-# Navigation
+# UI Components
 
-```text
-Dashboard
+## Sidebar
 
-Projects
+Navigation
 
-Agents
+- Dashboard
+- Projects
+- Deployments
+- Runtimes
+- Agents
+- AgentOps
+- Settings
 
+---
+
+## Top Navigation
+
+Contains
+
+- Search
+- Notifications
+- User Profile
+- Theme Toggle
+
+---
+
+## Deployment Card
+
+Displays
+
+- Project Name
+- Version
+- Runtime
+- Status
+- Deploy Time
+
+---
+
+## Runtime Card
+
+Displays
+
+- Runtime URL
+- Health
+- Uptime
+- Restart Count
+
+Buttons
+
+- Restart
+- Stop
+- Delete
+
+---
+
+## Agent Card
+
+Displays
+
+- Agent Name
+- Framework
+- Version
+- Capabilities
+
+---
+
+## Metrics Cards
+
+Examples
+
+```
+Running Runtimes
+
+24
+```
+
+```
+Average Latency
+
+210 ms
+```
+
+```
+Success Rate
+
+99.6%
+```
+
+```
 Deployments
 
-Runtime
-
-Observability
-
-Knowledge Base
-
-Settings
+152
 ```
 
 ---
 
-# Components
+# Real-Time Updates
 
-## Layout
+The dashboard connects to
 
-- Sidebar
-- Header
-- Footer
-- Navigation
-- Breadcrumb
+```
+/ws
+```
 
----
+Events
 
-## Dashboard Widgets
+```
+deployment.started
 
-- Statistics Cards
-- Deployment Table
-- Runtime Status
-- Cost Cards
-- Health Indicators
+deployment.completed
 
----
+runtime.started
 
-## Forms
+runtime.restarted
 
-- Create Project
-- Create Agent
-- Deployment Configuration
-- YAML Editor
-- API Key Generation
+runtime.failed
 
----
+health.changed
 
-## Data Tables
+logs.updated
 
-- Projects
-- Agents
-- Deployments
-- Runtime Instances
-- Logs
-- Audit Logs
+metrics.updated
+```
+
+UI updates automatically without refresh.
 
 ---
 
-## Charts
+# Deployment Workflow
 
-Dashboard visualizations include:
+```text
+Create Project
 
-- Request Rate
-- CPU Usage
-- Memory Usage
-- Token Usage
-- Deployment Trends
-- Cost Analysis
-- Error Rate
-- Response Time
+↓
 
----
+Connect GitHub
 
-# State Management
+↓
 
-The frontend stores:
+Deploy
 
-- User Session
-- Authentication State
-- Selected Project
-- Selected Agent
-- Dashboard Filters
-- Theme
-- Notifications
+↓
 
-Global state is managed using Zustand.
+Deployment Progress
 
-Server state is managed using TanStack Query.
+↓
+
+Runtime Ready
+
+↓
+
+Monitor Agent
+```
 
 ---
 
-# API Integration
+# Runtime Workflow
 
-REST APIs are used for:
+```text
+Deployment
 
-- Authentication
-- Projects
-- Deployments
-- Runtime
-- Agent Management
-- Knowledge Base
-- API Keys
+↓
 
----
+Runtime Created
 
-# WebSocket Integration
+↓
 
-Real-time updates include:
+Health Check
 
-- Deployment Started
-- Deployment Completed
-- Runtime Status
-- Live Logs
-- Trace Updates
-- Metrics
-- Notifications
+↓
 
-This eliminates the need for constant polling.
+Running
 
----
+↓
 
-# Authentication Flow
-
-```mermaid
-sequenceDiagram
-
-User->>Frontend: Login
-
-Frontend->>API Gateway: Authenticate
-
-API Gateway-->>Frontend: JWT Token
-
-Frontend->>Browser: Store Token
-
-Browser->>Frontend: Protected Request
-
-Frontend->>API Gateway: Authorization Header
-
-API Gateway-->>Frontend: Response
+AgentOps Dashboard
 ```
 
 ---
 
 # Responsive Design
 
-Supported devices:
+Supports
 
 - Desktop
-- Laptop
 - Tablet
 - Mobile
 
-The dashboard is optimized for large screens while remaining fully functional on smaller devices.
+---
+
+# Theme
+
+Supports
+
+- Light Theme
+- Dark Theme
 
 ---
 
-# User Experience Features
+# Error Handling
 
-- Dark Mode
-- Light Mode
-- Search
-- Filters
-- Pagination
-- Toast Notifications
-- Loading Skeletons
-- Error Boundaries
-- Empty States
+User-friendly pages for
 
----
+- 404
+- Unauthorized
+- Deployment Failed
+- Runtime Failed
+- Network Errors
 
-# Performance Optimization
+Toast notifications for
 
-- Code Splitting
-- Lazy Loading
-- Image Optimization
-- Route Prefetching
-- API Response Caching
-- Virtualized Tables
-- Memoization
+- Deployment Started
+- Deployment Completed
+- Runtime Restarted
+- Runtime Failed
 
 ---
 
-# Accessibility
+# API Integration
 
-The frontend follows accessibility best practices:
+Uses REST APIs
 
-- Keyboard Navigation
-- ARIA Labels
-- Screen Reader Support
-- Color Contrast
-- Focus Management
+```
+GET /projects
+
+GET /deployments
+
+GET /runtimes
+
+GET /agents
+
+GET /agentops/dashboard
+```
+
+Real-time updates use
+
+```
+WebSocket
+
+/ws
+```
+
+---
+
+# Dashboard Overview
+
+```text
+---------------------------------------------------
+
+Projects            Running Runtimes
+
+Deployments         Runtime Health
+
+-----------------------------------
+
+Runtime Metrics
+
+• Success Rate
+
+• Average Latency
+
+• Runtime Uptime
+
+-----------------------------------
+
+Deployment Timeline
+
+-----------------------------------
+
+Live Runtime Logs
+
+-----------------------------------
+
+OpenTelemetry Traces
+
+---------------------------------------------------
+```
 
 ---
 
 # Future Enhancements
 
-- Drag-and-Drop Workflow Builder
-- Visual YAML Editor
-- AI Deployment Assistant
-- Multi-Tenant Dashboard
-- Live Collaboration
-- Plugin Marketplace
+- Team Collaboration
+- Deployment Rollback UI
+- Multi-Cloud Runtime Selection
+- Kubernetes Dashboard
+- Cost Analytics
+- AI Chat Assistant
+- Notification Center
 - Mobile Application
-- Custom Dashboard Builder
-- Theme Customization
 
 ---
 
 # Summary
 
-The Frontend provides a modern, real-time dashboard for managing every aspect of R Agent Cloud. Built with Next.js, React, TypeScript, Tailwind CSS, and shadcn/ui, it enables developers to deploy AI agents, monitor runtime performance, inspect distributed traces, manage knowledge bases, visualize multi-agent workflows, and administer projects from a single, responsive interface.
+The frontend provides a centralized **AgentOps dashboard** for managing AI applications throughout their lifecycle.
+
+Users can:
+
+- Manage Projects
+- Connect GitHub
+- Deploy AI Applications
+- Monitor Runtime Health
+- Manage Runtimes
+- View Agent Registry
+- Analyze Deployments
+- Monitor AgentOps
+- View Logs and Traces
+
+The UI communicates with backend services through REST APIs and WebSockets, providing a responsive and real-time operational experience.
