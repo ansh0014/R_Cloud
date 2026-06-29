@@ -1,0 +1,32 @@
+/**
+ * src/proto/runtime.proto
+ *
+ * PROTOBUF CONTRACT — The gRPC service definition for the Runtime Service.
+ *
+ * What is this file?
+ *  This is the single source of truth for the Runtime Service's gRPC API.
+ *  Both this service (server) and any calling service (client, e.g. Deployment Service)
+ *  use this same file to generate typed TypeScript code.
+ *  If this file changes, all services using it must regenerate their code.
+ *
+ * Contents:
+ *  - RuntimeService: defines all available RPC methods
+ *  - Request/Response messages for each method
+ *  - RuntimeStatus enum: all possible states of a runtime
+ *  - HealthStatus enum: all possible health states
+ *
+ * Methods defined:
+ *  - CreateRuntime      → Deploy a new AI application to Railway
+ *  - RestartRuntime     → Restart an existing runtime
+ *  - StopRuntime        → Stop (pause) a running runtime
+ *  - DeleteRuntime      → Permanently destroy a runtime
+ *  - GetRuntimeStatus   → Query current state of a runtime
+ *
+ * Code Generation:
+ *  Run: npx protoc --ts_out=./src/generated ./src/proto/runtime.proto
+ *  This generates typed TypeScript interfaces and server/client stubs.
+ *
+ * IMPORTANT: This file must be agreed upon with the Deployment Service team
+ * before implementation begins. Changing it after both sides implement it
+ * requires coordinated updates on all services.
+ */
