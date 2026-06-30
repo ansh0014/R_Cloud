@@ -230,9 +230,13 @@ Ai-Agent/
 │       │   └── runtime_grpc_pb.ts ← gRPC server stub
 │       │
 │       ├── config/                ← env var validation
-│       ├── db/                    ← PostgreSQL + Drizzle ORM
+│       ├── db/                    ← PostgreSQL connection client only
+│       │                            schema SQL lives in Backend/db/schema/runtime.sql
+│       │                            if new column needed → update Backend schema, not here
 │       ├── errors/                ← custom error classes
-│       ├── events/                ← NATS publish/subscribe
+│       ├── events/                ← NATS client: publishes runtime lifecycle events
+│       │                            runtime.started, runtime.restarted, runtime.failed, runtime.stopped
+│       │                            does NOT define event topics — those are in Backend/events/nats.go
 │       ├── grpc/
 │       │   ├── server.ts          ← gRPC server bootstrap
 │       │   ├── handlers/
@@ -300,6 +304,19 @@ Ai-Agent/
         ├── health.py              ← GET /health → return { status: "healthy" }
         └── metadata.py            ← GET /metadata → return agent info
 ```
+
+---
+
+## Ownership Rules for runtime-service
+
+| Concern | Where it lives | Who updates it |
+|---|---|---|
+| Database schema (tables, columns) | `Backend/db/schema/runtime.sql` | Platform Team |
+| Database connection client | `runtime-service/src/db/` | Platform Team |
+| NATS event topics definition | `Backend/events/nats.go` | Platform Team |
+| NATS publish calls | `runtime-service/src/events/` | Platform Team |
+| Proto contract | `R_Cloud/proto/runtime.proto` | Both teams agree |
+| Generated gRPC code | `runtime-service/src/generated/` | Auto-generated, do not edit |
 
 ---
 
