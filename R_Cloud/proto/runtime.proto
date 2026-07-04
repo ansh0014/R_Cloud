@@ -1,0 +1,154 @@
+syntax = "proto3";
+
+package rcloud.runtime;
+
+// Go package path (used by deployment-service which is written in Go)
+option go_package = "github.com/rishanksharma09/rcloud/proto/runtime";
+
+
+service RuntimeService {    
+  rpc CreateRuntime  (CreateRuntimeRequest)  returns (CreateRuntimeResponse);
+  rpc StopRuntime    (StopRuntimeRequest)    returns (StopRuntimeResponse);
+  rpc RestartRuntime (RestartRuntimeRequest) returns (RestartRuntimeResponse);
+  rpc DeleteRuntime  (DeleteRuntimeRequest)  returns (DeleteRuntimeResponse);
+  rpc GetRuntimeStatus (GetRuntimeStatusRequest) returns (GetRuntimeStatusResponse);
+}
+
+
+enum DeploymentMode {
+  MONOLITH      = 0; // single Railway service for the whole app
+  MICROSERVICES = 1; // one Railway service per agent
+}
+
+enum RuntimeStatus {
+  CREATING   = 0;
+  RUNNING    = 1;
+  STOPPED    = 2;
+  RESTARTING = 3;
+  DELETED    = 4;
+  FAILED     = 5;
+}
+
+enum HealthStatus {
+  STARTING  = 0; // just deployed, waiting for first successful /health
+  HEALTHY   = 1; // GET /health returned { status: "healthy" }
+  UNHEALTHY = 2; // GET /health failed or returned non-healthy
+  UNKNOWN   = 3; // never been checked yet
+}
+
+
+
+// One agent in a microservices deployment — from ragent.yaml agents[] array
+message Agent {
+  string id         = 1; // "planner"
+  string entrypoint = 2; // "planner.py"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CreateRuntime
+//
+// Called by Deployment Service after ragent.yaml validation passes.
+// Runtime Service deploys to Railway and registers the runtime in PostgreSQL.
+//
+// Workflow:
+//   1. Deployment Service validates ragent.yaml
+//   2. Calls CreateRuntime with repo details + agent list + env vars
+//   3. Runtime Service calls Railway API (once per agent if microservices)
+//   4. Stores runtime in runtime_registry table
+//   5. Returns runtimeId + public URL + status
+// ─────────────────────────────────────────────────────────────────────────────
+message CreateRuntimeRequest {
+  string              deployment_id = 1; // "dep_123"
+  string              repo_url      = 2; // "https://github.com/user/customer-support"
+  string              branch        = 3; // "main"
+  DeploymentMode      mode          = 4; // MONOLITH or MICROSERVICES
+  repeated Agent      agents        = 5; // required when mode = MICROSERVICES
+  map<string, string> env_vars      = 6; // { "OPENAI_API_KEY": "sk-...", "DB_URL": "..." }
+}
+
+message DeployedAgent {
+  string agent_id  = 1; // "planner"
+  string agent_url = 2; // "https://planner-agent.up.railway.app"
+}
+
+message CreateRuntimeResponse {
+  string        runtime_id  = 1; // "rtm_456"
+  RuntimeStatus status      = 2; // RUNNING
+  repeated DeployedAgent agents = 3; // URLs for each individual agent
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// StopRuntime
+//
+// Stops the Railway service. Runtime stays registered in the DB with
+// status = STOPPED. Can be restarted later.
+// ─────────────────────────────────────────────────────────────────────────────
+message StopRuntimeRequest {
+  string runtime_id    = 1; // "rtm_456"
+  string deployment_id = 2; // "dep_123"
+}
+
+message StopRuntimeResponse {
+  string        runtime_id = 1;
+  RuntimeStatus status     = 2; // STOPPED
+  string        message    = 3;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RestartRuntime
+//
+// Restarts the Railway service. Also called internally by the health
+// scheduler when a runtime is found UNHEALTHY.
+// ─────────────────────────────────────────────────────────────────────────────
+message RestartRuntimeRequest {
+  string runtime_id    = 1; // "rtm_456"
+  string deployment_id = 2; // "dep_123"
+}
+
+message RestartRuntimeResponse {
+  string        runtime_id = 1;
+  RuntimeStatus status     = 2; // RESTARTING
+  string        message    = 3;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DeleteRuntime
+//
+// Permanently deletes the Railway project + service and removes the
+// runtime from runtime_registry. Cannot be undone.
+// ─────────────────────────────────────────────────────────────────────────────
+message DeleteRuntimeRequest {
+  string runtime_id    = 1; // "rtm_456"
+  string deployment_id = 2; // "dep_123"
+}
+
+message DeleteRuntimeResponse {
+  bool   success = 1;
+  string message = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HealthRuntime
+//
+// Returns the stored health state from runtime_registry.
+// This is NOT a live check — the health scheduler runs live checks
+// independently via GET /health on the deployed Railway container.
+// ─────────────────────────────────────────────────────────────────────────────
+message GetRuntimeStatusRequest {
+  string runtime_id    = 1;
+  string deployment_id = 2;
+}
+
+message AgentStatus {
+  string agent_id = 1;
+  string agent_url = 2;
+  HealthStatus health = 3;
+}
+
+message GetRuntimeStatusResponse {
+  string        runtime_id      = 1; // "rtm_456"
+  RuntimeStatus status          = 2; // RUNNING / STOPPED / FAILED
+  HealthStatus  overall_health  = 3; // HEALTHY / UNHEALTHY / STARTING
+  string        last_checked_at = 4; // ISO 8601 — "2026-06-29T09:00:00Z"
+  repeated AgentStatus agents   = 5;
+}

@@ -1,0 +1,20 @@
+export enum DeploymentMode {
+  MONOLITH = 'MONOLITH',
+  MICROSERVICES = 'MICROSERVICES',
+}
+
+export enum RuntimeStatus {
+  CREATING = 'CREATING',
+  RUNNING = 'RUNNING',
+  STOPPED = 'STOPPED',
+  RESTARTING = 'RESTARTING',
+  DELETED = 'DELETED',
+  FAILED = 'FAILED',
+}
+
+export enum HealthStatus {
+  STARTING = 'STARTING',
+  HEALTHY = 'HEALTHY',
+  UNHEALTHY = 'UNHEALTHY',
+  UNKNOWN = 'UNKNOWN',
+}

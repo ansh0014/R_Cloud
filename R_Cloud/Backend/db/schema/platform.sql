@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS deployments (
 CREATE TABLE IF NOT EXISTS runtime_registry (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     deployment_id UUID NOT NULL REFERENCES deployments(id) ON DELETE CASCADE,
-    runtime_url VARCHAR(500) NOT NULL,
     provider VARCHAR(100) DEFAULT 'railway',
+    railway_project_id VARCHAR(100),
     status VARCHAR(50) NOT NULL, 
     health VARCHAR(50) NOT NULL, 
     restart_count INT DEFAULT 0,
@@ -44,5 +44,8 @@ CREATE TABLE IF NOT EXISTS agent_registry (
     framework VARCHAR(100),
     version VARCHAR(50),
     capabilities VARCHAR(100)[],
+    agent_url VARCHAR(500),
+    railway_service_id VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
