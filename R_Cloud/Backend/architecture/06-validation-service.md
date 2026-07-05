@@ -92,3 +92,31 @@ Failure:
   "errors": ["Missing ragent.yaml", "Missing /health route"]
 }
 ```
+
+---
+
+# Circuit Breaker Specification
+
+To protect the Deployment Service from cascading resource exhaustion when the Validation Service is unreachable or down, a Circuit Breaker pattern must be implemented in the Deployment Service client calling the Validation Service.
+
+## Configuration Parameters
+
+- **Failure Threshold:** 5 consecutive failed validation requests.
+- **Cooldown Window:** 30 seconds (time spent in `OPEN` state before transitioning to `HALF-OPEN`).
+- **Request Timeout:** 5 seconds (maximum wait time for a validation request before counting it as a failure).
+
+## State Flow & Fallback Behavior
+
+1. **Closed (Healthy):** All requests pass through to the Validation Service normally.
+2. **Open (Tripped):** When the failure threshold is reached, the breaker trips. All subsequent validation requests fail-fast immediately for the duration of the cooldown window.
+   - **Fallback Response:** 
+     ```json
+     {
+       "success": false,
+       "error": "Validation Service is temporarily unavailable. Please try again later."
+     }
+     ```
+3. **Half-Open (Trial):** After the cooldown window, the next single request is allowed to hit the Validation Service:
+   - **If Success:** Reset failure count and return to `CLOSED`.
+   - **If Failure:** Re-trip to `OPEN` and reset the cooldown window.
+

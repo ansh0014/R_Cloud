@@ -90,3 +90,41 @@ func (s *ProjectService) ConnectGitHub(projectID, repoURL string) (*models.Proje
 func (s *ProjectService) DeleteProject(projectID string) error {
 	return s.repo.Delete(projectID)
 }
+
+func (s *ProjectService) SyncGitHub(projectID string) (*models.Project, error) {
+	project, err := s.repo.GetByID(projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch project: %w", err)
+	}
+	if project == nil {
+		return nil, errors.New("project not found")
+	}
+
+	if project.GithubRepoURL == "" {
+		return nil, errors.New("no github repository is connected to this project")
+	}
+
+	repoInfo, err := s.githubClient.ValidateRepository(project.GithubRepoURL)
+	if err != nil {
+		return nil, fmt.Errorf("github sync validation failed: %w", err)
+	}
+
+	err = s.repo.UpdateGitHubInfo(
+		projectID,
+		repoInfo.CloneURL,
+		repoInfo.Name,
+		repoInfo.Owner.Login,
+		repoInfo.DefaultBranch,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update github info during sync: %w", err)
+	}
+
+	project.GithubRepoURL = repoInfo.CloneURL
+	project.GithubRepoName = repoInfo.Name
+	project.GithubOwner = repoInfo.Owner.Login
+	project.DefaultBranch = repoInfo.DefaultBranch
+
+	return project, nil
+}
+

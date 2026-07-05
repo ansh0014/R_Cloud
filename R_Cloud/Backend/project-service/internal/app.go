@@ -65,4 +65,5 @@ func registerRoutes(router *mux.Router, handler *handlers.ProjectHandler) {
 	api.HandleFunc("/projects/{projectId}", handler.Get).Methods(http.MethodGet)
 	api.HandleFunc("/projects/{projectId}", handler.Delete).Methods(http.MethodDelete)
 	api.HandleFunc("/projects/{projectId}/github", handler.ConnectGitHub).Methods(http.MethodPost)
+	api.HandleFunc("/projects/{projectId}/sync", handler.SyncGitHub).Methods(http.MethodPost)
 }

@@ -112,3 +112,16 @@ func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	utils.WriteSuccess(w, http.StatusOK, nil, "Project deleted")
 }
+
+func (h *ProjectHandler) SyncGitHub(w http.ResponseWriter, r *http.Request) {
+	projectID := mux.Vars(r)["projectId"]
+
+	project, err := h.service.SyncGitHub(projectID)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "GITHUB_SYNC_FAILED", err.Error())
+		return
+	}
+
+	utils.WriteSuccess(w, http.StatusOK, project, "GitHub repository synced successfully")
+}
+
