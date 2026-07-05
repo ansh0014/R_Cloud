@@ -1,3 +1,3 @@
-module r_cloud/shared
+module github.com/r-cloud/shared
 
 go 1.22

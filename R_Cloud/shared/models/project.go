@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-// Project represents an AI application project connected to a GitHub repository.
+
 type Project struct {
 	ID             string    `json:"id"`
 	UserID         string    `json:"userId"`

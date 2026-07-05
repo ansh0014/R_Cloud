@@ -12,7 +12,6 @@ type APIResponse struct {
 	Error   *APIError   `json:"error,omitempty"`
 }
 
-
 type APIError struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
@@ -33,7 +32,6 @@ func WriteError(w http.ResponseWriter, status int, code string, message string) 
 		},
 	})
 }
-
 
 func WriteSuccess(w http.ResponseWriter, status int, data interface{}, message string) {
 	WriteJSON(w, status, APIResponse{
