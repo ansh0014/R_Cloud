@@ -1,138 +1,1366 @@
-# R Agent Cloud — Backend Architecture
+# Backend Architecture
 
-> Control plane for the R Agent Cloud platform.
+> **Control Plane Architecture for R Agent Cloud**
 
 ---
 
 # Overview
 
-The backend is the control plane of R Agent Cloud.
+R Agent Cloud is a **control plane** built on top of **Railway**.
 
-It is responsible for:
+The platform is responsible for understanding AI projects, validating them, planning deployments, orchestrating runtime creation, and monitoring deployed applications.
 
-- Authentication
-- Project Management
-- GitHub Integration
-- AI Project Validation
-- Deployment Orchestration
-- Runtime Management
-- Runtime Registry
-- Agent Registry
-- Notifications
-- AgentOps
-- Observability
+R Agent Cloud **does not replace Railway**.
+
+Instead, Railway acts as the infrastructure provider responsible for building, hosting, networking, and running the AI applications.
 
 The backend never executes AI logic.
 
-AI applications execute inside user runtimes deployed on Railway.
+All AI applications execute inside isolated Railway runtimes.
+
+---
+
+# Responsibilities
+
+The backend is responsible for:
+
+* Authentication
+* Project Management
+* GitHub Integration
+* Repository Validation
+* Deployment Planning
+* Deployment Orchestration
+* Runtime Orchestration
+* Runtime Registry
+* Agent Registry
+* Notifications
+* AgentOps
+* Observability
+
+---
+
+# Non Responsibilities
+
+The backend is **NOT** responsible for:
+
+* Building containers
+* Running containers
+* Networking
+* Public URLs
+* Infrastructure provisioning
+* Load balancing
+* Container scheduling
+
+These responsibilities belong to Railway.
 
 ---
 
 # High Level Architecture
 
 ```text
-                    Client
-                       │
-                       ▼
-                  API Gateway
-                       │
-      ┌────────────────┼────────────────┐
-      ▼                ▼                ▼
- Authentication   Project Service   Deployment Service
-                                         │
-                                         ▼
-                                 Validation Service
-                                         │
-                                         ▼
-                                  Runtime Service ──── gRPC ───→ Ai-Agent/runtime-service
-                                         │
-                                         ▼
-                                  Railway Provider
-                                         │
-                                         ▼
-                              AI Application on Railway
-                              (Ai-Agent/runtime-engine)
+                                  Client
+                                     │
+                                     ▼
+                              API Gateway
+                                     │
+        ┌──────────────┬─────────────┴──────────────┐
+        ▼              ▼                            ▼
+ Authentication   Project Service          Deployment Service
+                                                │
+                                                │ Clone Repository
+                                                ▼
+                                        Validation Service
+                                                │
+                                         ValidationResult
+                                                │
+                                                ▼
+                                        Deployment Planner
+                                                │
+                                         DeploymentPlan
+                                                │
+                                           gRPC Request
+                                                ▼
+──────────────────────────────────────────────────────────────────────────────
+                    Runtime Service (Ai-Agent/runtime-service)
+──────────────────────────────────────────────────────────────────────────────
+                                                │
+                                                ▼
+                                           Railway API
+                                                │
+                                                ▼
+                                             Railway
+                                                │
+                                                ▼
+                                     AI Application Runtime
+                                                │
+                                   /execute  /health  /metadata
 
-                 ─────────────────────────────────────
+──────────────────────────────────────────────────────────────────────────────
 
-                 Notification Service   ← WebSocket + Email
+Notification Service   ←────── NATS ──────→   AgentOps Service
 
-                 AgentOps Service       ← subscribes to NATS events
+                 PostgreSQL (Platform)
 
-                 PostgreSQL             ← platform data
+                 PostgreSQL (Authentication)
 
-                 Auth PostgreSQL        ← users, tokens, api keys
+                 Redis
 
-                 Redis                  ← cache, sessions, rate limiting
-
-                 OpenTelemetry          ← distributed tracing
-
-                 NATS                   ← async event bus
+                 OpenTelemetry
 ```
 
 ---
 
-# Services
+# Backend Components
 
-| Service | Responsibility | Doc |
-|---|---|---|
-| API Gateway | Single entry point, JWT, rate limiting, routing, proxy | 02-api-gateway.md |
-| Auth Service | Login, register, JWT, refresh tokens, API keys | 03-auth-service.md |
-| Project Service | Projects, GitHub repos, branches, metadata | 04-project-service.md |
-| Deployment Service | Clone repo, lifecycle, version management, deploy plan | 05-deployment-service.md |
-| Validation Service | Validate ragent.yaml, entrypoints, runtime contract | 06-validation-service.md |
-| Runtime Service | Deploy, restart, stop, delete, health, registry | 07-runtime-service.md |
-| Notification Service | Email, WebSocket, real-time updates | 08-notification-service.md |
-| AgentOps Service | Metrics, logs, traces, analytics, dashboard | 09-agentops-service.md |
-
----
-
-# Databases
-
-| Database | Purpose | Doc |
-|---|---|---|
-| Auth PostgreSQL | Users, sessions, API keys, refresh tokens | 11-database.md |
-| Platform PostgreSQL | Projects, deployments, runtime registry, agent registry | 11-database.md |
-| Redis | Sessions, cache, rate limiting, queues | 11-database.md |
+| Component              | Responsibility                           |
+| ---------------------- | ---------------------------------------- |
+| API Gateway            | Public entry point for every request     |
+| Authentication Service | Login, JWT, API Keys, Users              |
+| Project Service        | GitHub repositories and project metadata |
+| Deployment Service     | Deployment orchestration                 |
+| Validation Service     | Repository validation                    |
+| Deployment Planner     | Generates Deployment Plans               |
+| Runtime Service        | Runtime lifecycle management             |
+| Notification Service   | Email and WebSocket notifications        |
+| AgentOps Service       | Metrics, logs, traces and analytics      |
 
 ---
 
-# Event Bus
+# Control Plane Flow
 
-Technology: NATS
+```text
+User
 
-Every service publishes and subscribes to events asynchronously.
+↓
 
-Documentation: 10-event-bus.md
+API Gateway
+
+↓
+
+Deployment Service
+
+↓
+
+Clone GitHub Repository
+
+↓
+
+Validation Service
+
+↓
+
+ValidationResult
+
+↓
+
+Deployment Planner
+
+↓
+
+DeploymentPlan
+
+↓
+
+gRPC
+
+↓
+
+Runtime Service
+
+↓
+
+Railway API
+
+↓
+
+Railway
+
+↓
+
+Public Runtime URL
+
+↓
+
+Health Monitoring
+
+↓
+
+Agent Registry
+
+↓
+
+AgentOps
+```
 
 ---
 
-# Service Communication
+# Deployment Lifecycle
 
-| From | To | Protocol |
-|---|---|---|
-| Client | API Gateway | REST HTTPS |
-| Frontend | API Gateway | WebSocket |
-| API Gateway | Deployment Service | Internal Go call |
-| Deployment Service | Runtime Service | gRPC TCP:50051 |
-| Runtime Service | Railway API | REST HTTPS |
-| Runtime Service | AI Application | HTTP GET /health |
-| API Gateway | AI Application | HTTP proxy /execute |
-| Any service | NATS | Publish/Subscribe |
-| Any service | OTel Collector | OpenTelemetry |
+## Step 1
 
-Documentation: 13-service-communication.md
+The client requests a deployment.
+
+```text
+POST /deployments
+```
+
+↓
+
+API Gateway
+
+↓
+
+Deployment Service
+
+---
+
+## Step 2
+
+Deployment Service
+
+* Creates deployment record
+* Publishes deployment.created
+* Clones GitHub repository
+
+---
+
+## Step 3
+
+Repository is sent to Validation Service.
+
+Validation Service
+
+* Parses ragent.yaml
+* Validates repository
+* Validates workflow
+* Validates endpoints
+* Validates entrypoints
+
+Returns
+
+```text
+ValidationResult
+```
+
+---
+
+## Step 4
+
+Deployment Planner receives
+
+```text
+ValidationResult
+```
+
+Planner generates
+
+```text
+DeploymentPlan
+```
+
+The planner decides
+
+* Deployment mode
+* Build command
+* Start command
+* Environment variables
+* Provider configuration
+
+---
+
+## Step 5
+
+Deployment Service receives
+
+```text
+DeploymentPlan
+```
+
+Updates deployment state
+
+```text
+DEPLOYING
+```
+
+Calls Runtime Service using gRPC.
+
+---
+
+# gRPC Architecture
+
+Only one synchronous communication exists inside the platform.
+
+```text
+Deployment Service
+        │
+        │
+        │ DeploymentPlan
+        │
+        ▼
+Runtime Service
+```
+
+The Runtime Service **never** receives:
+
+* ragent.yaml
+* Repository
+* GitHub URL
+* Source code
+
+The Runtime Service only receives a DeploymentPlan.
+
+---
+
+# Runtime Flow
+
+Runtime Service receives
+
+```text
+DeploymentPlan
+```
+
+↓
+
+Converts the DeploymentPlan into Railway API requests.
+
+↓
+
+Creates Railway project.
+
+↓
+
+Creates Railway service.
+
+↓
+
+Configures build settings.
+
+↓
+
+Configures start command.
+
+↓
+
+Configures environment variables.
+
+↓
+
+Starts deployment.
+
+↓
+
+Waits for build completion.
+
+↓
+
+Receives Runtime URL.
+
+↓
+
+Registers runtime.
+
+↓
+
+Publishes runtime.started.
+
+---
+
+# Railway Responsibilities
+
+Railway is responsible for
+
+* Building application
+* Running containers
+* Public networking
+* HTTPS
+* Container lifecycle
+* Infrastructure
+* Resource allocation
+* Deployment execution
+
+R Agent Cloud never performs these tasks itself.
+
+---
+
+# Communication Overview
+
+```text
+REST
+
+Client
+
+↓
+
+API Gateway
+
+↓
+
+Deployment Service
+
+──────────────────────────────────────
+
+REST / gRPC
+
+Deployment Service
+
+↓
+
+Validation Service
+
+──────────────────────────────────────
+
+Internal Planning
+
+Deployment Service
+
+↓
+
+Deployment Planner
+
+──────────────────────────────────────
+
+gRPC
+
+Deployment Service
+
+↓
+
+Runtime Service
+
+──────────────────────────────────────
+
+REST HTTPS
+
+Runtime Service
+
+↓
+
+Railway API
+```
 
 ---
 
 # Design Principles
 
-- Every service owns a single responsibility.
-- Runtime Service is the only service allowed to communicate with Railway.
-- Validation happens before deployment.
-- Authentication is isolated in its own database.
-- Platform metadata is stored separately from auth data.
-- Services communicate asynchronously through NATS.
-- OpenTelemetry provides distributed tracing across all backend services.
-- gRPC is used only for Deployment Service → Runtime Service communication.
-- The backend never executes AI logic.
+* Single responsibility per service
+* Validation before planning
+* Planning before deployment
+* Deployment before runtime creation
+* Runtime Service never parses repositories
+* Validation Service never communicates with Railway
+* Deployment Planner owns provider-specific deployment logic
+* Deployment Service orchestrates the deployment lifecycle
+* Runtime Service is the only backend service allowed to communicate with Railway
+* Railway remains the infrastructure provider
+* NATS is used for asynchronous communication
+* gRPC is used only between Deployment Service and Runtime Service
+* OpenTelemetry provides distributed tracing across all backend services
+
+
+
+> **Control Plane Architecture for R Agent Cloud**
+
+
+
+
+
+
+R Agent Cloud is a **control plane** built on top of **Railway**.
+
+
+
+The platform is responsible for understanding AI projects, validating them, planning deployments, orchestrating runtime creation, and monitoring deployed applications. 
+
+ 
+
+R Agent Cloud **does not replace Railway**. 
+
+ 
+
+Instead, Railway acts as the infrastructure provider responsible for building, hosting, networking, and running the AI applications.
+
+
+
+The backend never executes AI logic.
+
+
+
+All AI applications execute inside isolated Railway runtimes.
+
+
+
+---
+
+
+
+# Responsibilities
+
+
+
+The backend is responsible for:
+
+
+
+* Authentication
+
+* Project Management
+
+* GitHub Integration
+
+* Repository Validation
+
+* Deployment Planning
+
+* Deployment Orchestration
+
+* Runtime Orchestration
+
+* Runtime Registry
+
+* Agent Registry
+
+* Notifications
+
+* AgentOps
+
+* Observability
+
+
+
+---
+
+
+
+# Non Responsibilities
+
+
+
+The backend is **NOT** responsible for:
+
+
+
+* Building containers
+
+* Running containers
+
+* Networking
+
+* Public URLs
+
+* Infrastructure provisioning
+
+* Load balancing
+
+* Container scheduling
+
+
+
+These responsibilities belong to Railway.
+
+
+
+---
+
+
+
+# High Level Architecture
+
+
+
+```text
+
+                                  Client
+
+                                     │
+
+                                     ▼
+
+                              API Gateway
+
+                                     │
+
+        ┌──────────────┬─────────────┴──────────────┐
+
+        ▼              ▼                            ▼
+
+ Authentication   Project Service          Deployment Service
+
+                                                │
+
+                                                │ Clone Repository
+
+                                                ▼
+
+                                        Validation Service
+
+                                                │
+
+                                         ValidationResult
+
+                                                │
+
+                                                ▼
+
+                                        Deployment Planner
+
+                                                │
+
+                                         DeploymentPlan
+
+                                                │
+
+                                           gRPC Request
+
+                                                ▼
+
+──────────────────────────────────────────────────────────────────────────────
+
+                    Runtime Service (Ai-Agent/runtime-service)
+
+──────────────────────────────────────────────────────────────────────────────
+
+                                                │
+
+                                                ▼
+
+                                           Railway API
+
+                                                │
+
+                                                ▼
+
+                                             Railway
+
+                                                │
+
+                                                ▼
+
+                                     AI Application Runtime
+
+                                                │
+
+                                   /execute  /health  /metadata
+
+
+
+──────────────────────────────────────────────────────────────────────────────
+
+
+
+Notification Service   ←────── NATS ──────→   AgentOps Service
+
+
+
+                 PostgreSQL (Platform)
+
+
+
+                 PostgreSQL (Authentication)
+
+
+
+                 Redis
+
+
+
+                 OpenTelemetry
+
+```
+
+
+
+---
+
+
+
+# Backend Components
+
+
+
+| Component              | Responsibility                           |
+
+| ---------------------- | ---------------------------------------- |
+
+| API Gateway            | Public entry point for every request     |
+
+| Authentication Service | Login, JWT, API Keys, Users              |
+
+| Project Service        | GitHub repositories and project metadata |
+
+| Deployment Service     | Deployment orchestration                 |
+
+| Validation Service     | Repository validation                    |
+
+| Deployment Planner     | Generates Deployment Plans               |
+
+| Runtime Service        | Runtime lifecycle management             |
+
+| Notification Service   | Email and WebSocket notifications        |
+
+| AgentOps Service       | Metrics, logs, traces and analytics      |
+
+
+
+---
+
+
+
+# Control Plane Flow
+
+
+
+```text
+
+User
+
+
+
+↓
+
+
+
+API Gateway
+
+
+
+↓
+
+
+
+Deployment Service
+
+
+
+↓
+
+
+
+Clone GitHub Repository
+
+
+
+↓
+
+
+
+Validation Service
+
+
+
+↓
+
+
+
+ValidationResult
+
+
+
+↓
+
+
+
+Deployment Planner
+
+
+
+↓
+
+
+
+DeploymentPlan
+
+
+
+↓
+
+
+
+gRPC
+
+
+
+↓
+
+
+
+Runtime Service
+
+
+
+↓
+
+
+
+Railway API
+
+
+
+↓
+
+
+
+Railway
+
+
+
+↓
+
+
+
+Public Runtime URL
+
+
+
+↓
+
+
+
+Health Monitoring
+
+
+
+↓
+
+
+
+Agent Registry
+
+
+
+↓
+
+
+
+AgentOps
+
+```
+
+
+
+---
+
+
+
+# Deployment Lifecycle
+
+
+
+## Step 1
+
+
+
+The client requests a deployment.
+
+
+
+```text
+
+POST /deployments
+
+```
+
+
+
+↓
+
+
+
+API Gateway
+
+
+
+↓
+
+
+
+Deployment Service
+
+
+
+---
+
+
+
+## Step 2
+
+
+
+Deployment Service
+
+
+
+* Creates deployment record
+
+* Publishes deployment.created
+
+* Clones GitHub repository
+
+
+
+---
+
+
+
+## Step 3
+
+
+
+Repository is sent to Validation Service.
+
+
+
+Validation Service
+
+
+
+* Parses ragent.yaml
+
+* Validates repository
+
+* Validates workflow
+
+* Validates endpoints
+
+* Validates entrypoints
+
+
+
+Returns
+
+
+
+```text
+
+ValidationResult
+
+```
+
+
+
+---
+
+
+
+## Step 4
+
+
+
+Deployment Planner receives
+
+
+
+```text
+
+ValidationResult
+
+```
+
+
+
+Planner generates
+
+
+
+```text
+
+DeploymentPlan
+
+```
+
+
+
+The planner decides
+
+
+
+* Deployment mode
+
+* Build command
+
+* Start command
+
+* Environment variables
+
+* Provider configuration
+
+
+
+---
+
+
+
+## Step 5
+
+
+
+Deployment Service receives
+
+
+
+```text
+
+DeploymentPlan
+
+```
+
+
+
+Updates deployment state
+
+
+
+```text
+
+DEPLOYING
+
+```
+
+
+
+Calls Runtime Service using gRPC.
+
+
+
+---
+
+
+
+# gRPC Architecture
+
+
+
+Only one synchronous communication exists inside the platform.
+
+
+
+```text
+
+Deployment Service
+
+        │
+
+        │
+
+        │ DeploymentPlan
+
+        │
+
+        ▼
+
+Runtime Service
+
+```
+
+
+
+The Runtime Service **never** receives:
+
+
+
+* ragent.yaml
+
+* Repository
+
+* GitHub URL
+
+* Source code
+
+
+
+The Runtime Service only receives a DeploymentPlan.
+
+
+
+---
+
+
+
+# Runtime Flow
+
+
+
+Runtime Service receives
+
+
+
+```text
+
+DeploymentPlan
+
+```
+
+
+
+↓
+
+
+
+Converts the DeploymentPlan into Railway API requests.
+
+
+
+↓
+
+
+
+Creates Railway project.
+
+
+
+↓
+
+
+
+Creates Railway service.
+
+
+
+↓
+
+
+
+Configures build settings.
+
+
+
+↓
+
+
+
+Configures start command.
+
+
+
+↓
+
+
+
+Configures environment variables.
+
+
+
+↓
+
+
+
+Starts deployment.
+
+
+
+↓
+
+
+
+Waits for build completion.
+
+
+
+↓
+
+
+
+Receives Runtime URL.
+
+
+
+↓
+
+
+
+Registers runtime.
+
+
+
+↓
+
+
+
+Publishes runtime.started.
+
+
+
+---
+
+
+
+# Railway Responsibilities
+
+
+
+Railway is responsible for
+
+
+
+* Building application
+
+* Running containers
+
+* Public networking
+
+* HTTPS
+
+* Container lifecycle
+
+* Infrastructure
+
+* Resource allocation
+
+* Deployment execution
+
+
+
+R Agent Cloud never performs these tasks itself.
+
+
+
+---
+
+
+
+# Communication Overview
+
+
+
+```text
+
+REST
+
+
+
+Client
+
+
+
+↓
+
+
+
+API Gateway
+
+
+
+↓
+
+
+
+Deployment Service
+
+
+
+──────────────────────────────────────
+
+
+
+REST / gRPC
+
+
+
+Deployment Service
+
+
+
+↓
+
+
+
+Validation Service
+
+
+
+──────────────────────────────────────
+
+
+
+Internal Planning
+
+
+
+Deployment Service
+
+
+
+↓
+
+
+
+Deployment Planner
+
+
+
+──────────────────────────────────────
+
+
+
+gRPC
+
+
+
+Deployment Service
+
+
+
+↓
+
+
+
+Runtime Service
+
+
+
+──────────────────────────────────────
+
+
+
+REST HTTPS
+
+
+
+Runtime Service
+
+
+
+↓
+
+
+
+Railway API
+
+```
+
+
+
+---
+
+
+
+# Design Principles
+
+
+
+* Single responsibility per service
+
+* Validation before planning
+
+* Planning before deployment
+
+* Deployment before runtime creation
+
+* Runtime Service never parses repositories
+
+* Validation Service never communicates with Railway
+
+* Deployment Planner owns provider-specific deployment logic
+
+* Deployment Service orchestrates the deployment lifecycle
+
+* Runtime Service is the only backend service allowed to communicate with Railway
+
+* Railway remains the infrastructure provider
+
+* NATS is used for asynchronous communication
+
+* gRPC is used only between Deployment Service and Runtime Service
+
+* OpenTelemetry provides distributed tracing across all backend services
+
+
