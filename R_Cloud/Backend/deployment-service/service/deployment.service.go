@@ -27,25 +27,6 @@ type Agent struct {
 	Entrypoint string `json:"entrypoint"`
 }
 
-type ServicePlan struct {
-	Name         string `json:"name"`
-	Entrypoint   string `json:"entrypoint"`
-	ExecuteRoute string `json:"executeRoute"`
-	HealthRoute  string `json:"healthRoute"`
-	MetadataRoute string `json:"metadataRoute"`
-}
-
-type DeploymentPlan struct {
-	Provider     string            `json:"provider"`
-	Mode         string            `json:"mode"`
-	Runtime      string            `json:"runtime"`
-	Framework    string            `json:"framework"`
-	BuildCommand string            `json:"buildCommand"`
-	StartCommand string            `json:"startCommand"`
-	Environment  map[string]string `json:"environment"`
-	Services     []ServicePlan     `json:"services"`
-}
-
 type DeploymentService struct {
 	repo                  *repo.DeploymentRepository
 	runtimeClient         *grpcclient.RuntimeClient
@@ -206,7 +187,7 @@ func (s *DeploymentService) callValidationService(ctx context.Context, repoDir s
 	return &result, nil
 }
 
-func (s *DeploymentService) callPlannerService(ctx context.Context, validation *ValidationResult, envVars map[string]string) (*DeploymentPlan, error) {
+func (s *DeploymentService) callPlannerService(ctx context.Context, validation *ValidationResult, envVars map[string]string) (*grpcclient.DeploymentPlan, error) {
 	payload := map[string]interface{}{
 		"validationResult": validation,
 		"environment":      envVars,
@@ -234,7 +215,7 @@ func (s *DeploymentService) callPlannerService(ctx context.Context, validation *
 		return nil, fmt.Errorf("deployment planner returned status %s", resp.Status)
 	}
 
-	var plan DeploymentPlan
+	var plan grpcclient.DeploymentPlan
 	if err := json.NewDecoder(resp.Body).Decode(&plan); err != nil {
 		return nil, fmt.Errorf("failed to parse planner response: %w", err)
 	}
