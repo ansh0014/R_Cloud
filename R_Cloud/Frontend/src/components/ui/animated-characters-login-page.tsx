@@ -3,9 +3,9 @@ import { Button }   from '@/components/ui/button'
 import { Input }    from '@/components/ui/input'
 import { Label }    from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Eye, EyeOff, GitBranch, Sparkles, X } from 'lucide-react'
+import { Eye, EyeOff, Sparkles, X, Loader2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 
 /* ─── Types ──────────────────────────────────────────────── */
 interface PupilProps {
@@ -115,12 +115,12 @@ const EyeBall = ({
 
 /* ─── Main Login Page ────────────────────────────────────── */
 interface AuthPageProps {
-  onClose?: () => void
   mode?: 'signin' | 'signup'
 }
 
-function AuthPage({ onClose, mode = 'signup' }: AuthPageProps) {
+function AuthPage({ mode = 'signup' }: AuthPageProps) {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [showPassword, setShowPassword]     = useState(false)
   const [email, setEmail]                   = useState('')
   const [password, setPassword]             = useState('')
@@ -224,16 +224,40 @@ function AuthPage({ onClose, mode = 'signup' }: AuthPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setIsLoading(true)
-    await new Promise(r => setTimeout(r, 400))
-    // Demo: accept any non-empty creds
-    if (email && password) {
-      alert(`Welcome to R Agent Cloud! 🚀\n\nYou're in, ${name || email.split('@')[0]}.`)
-      navigate('/')
-    } else {
+
+    if (!email || !password) {
       setError('Please fill in all required fields.')
+      return
     }
-    setIsLoading(false)
+
+    if (mode === 'signup' && !name) {
+      setError('Please enter your name.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      await login(email, name)
+      const normalizedEmail = email.toLowerCase().trim()
+      if (normalizedEmail.includes('admin')) {
+        navigate('/admin')
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Authentication failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Pre-fill helper for review
+  const handlePrefill = (presetEmail: string) => {
+    setEmail(presetEmail)
+    setPassword('password123')
+    if (mode === 'signup') {
+      setName(presetEmail.includes('admin') ? 'System Admin' : 'Agent Developer')
+    }
   }
 
   return (
@@ -403,21 +427,21 @@ function AuthPage({ onClose, mode = 'signup' }: AuthPageProps) {
       </div>
 
       {/* ── Right — Form panel ───────────────────────────── */}
-      <div className="flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-[420px]">
+      <div className="flex items-center justify-center p-8 bg-background overflow-y-auto">
+        <div className="w-full max-w-[420px] py-8">
 
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-2
-            text-lg font-semibold mb-10">
-            <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Sparkles className="size-4 text-primary" />
+            text-lg font-semibold mb-8">
+            <div className="size-8 rounded-lg bg-[#7b39fc] flex items-center justify-center text-white">
+              <Sparkles className="size-4" />
             </div>
-            <span className="font-manrope">R Agent Cloud</span>
+            <span className="font-manrope text-foreground">R Agent Cloud</span>
           </div>
 
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold tracking-tight mb-2 font-manrope">
+            <h1 className="text-3xl font-bold tracking-tight mb-2 font-manrope text-foreground">
               {mode === 'signup' ? 'Create your account' : 'Welcome back!'}
             </h1>
             <p className="text-muted-foreground text-sm">
@@ -427,11 +451,122 @@ function AuthPage({ onClose, mode = 'signup' }: AuthPageProps) {
             </p>
           </div>
 
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg">
+                {error}
+              </div>
+            )}
+
+            {mode === 'signup' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Enter your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onFocus={() => setIsTyping(true)}
+                  onBlur={() => setIsTyping(false)}
+                  className="h-11 border-border/60 focus-visible:ring-primary"
+                />
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setIsTyping(true)}
+                onBlur={() => setIsTyping(false)}
+                className="h-11 border-border/60 focus-visible:ring-primary"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {mode === 'signin' && (
+                  <a href="#" className="text-xs text-primary hover:underline font-medium">
+                    Forgot password?
+                  </a>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setIsTyping(true)}
+                  onBlur={() => setIsTyping(false)}
+                  className="h-11 pr-10 border-border/60 focus-visible:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </div>
+
+            {mode === 'signup' && (
+              <div className="flex items-center space-x-2 pt-1">
+                <Checkbox id="terms" required />
+                <Label htmlFor="terms" className="text-xs text-muted-foreground font-normal leading-tight">
+                  I agree to the{' '}
+                  <a href="#" className="text-primary hover:underline font-medium">
+                    Terms of Service
+                  </a>{' '}
+                  and{' '}
+                  <a href="#" className="text-primary hover:underline font-medium">
+                    Privacy Policy
+                  </a>.
+                </Label>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-11 bg-primary text-white hover:bg-primary/95 mt-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Please wait...
+                </>
+              ) : mode === 'signup' ? (
+                'Create Account'
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border/60" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
 
           {/* Social */}
-          <div className="mt-4">
+          <div>
             <Button variant="outline"
-              className="w-full h-12 border-border/60 hover:bg-accent font-manrope"
+              className="w-full h-11 border-border/60 hover:bg-accent font-manrope"
               type="button">
               <svg className="mr-2 size-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -439,14 +574,38 @@ function AuthPage({ onClose, mode = 'signup' }: AuthPageProps) {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
-              Continue with Google
+              Google
             </Button>
           </div>
 
+          {/* Quick Demo Pre-fills card */}
+          <div className="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-col gap-2">
+            <span className="text-xs font-semibold text-primary uppercase tracking-wider">Quick Demo Pre-fills</span>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => handlePrefill('user@rcloud.com')}
+                className="py-2 px-3 bg-background border rounded-lg hover:border-primary text-center font-medium text-muted-foreground hover:text-primary transition-all"
+              >
+                user@rcloud.com
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePrefill('admin@rcloud.com')}
+                className="py-2 px-3 bg-background border rounded-lg hover:border-primary text-center font-medium text-muted-foreground hover:text-primary transition-all"
+              >
+                admin@rcloud.com
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center mt-1">
+              Clicking either button will pre-fill values. Any password works.
+            </p>
+          </div>
+
           {/* Switch mode */}
-          <p className="text-center text-sm text-muted-foreground mt-7">
+          <p className="text-center text-sm text-muted-foreground mt-6">
             {mode === 'signup' ? 'Already have an account? ' : "Don't have an account? "}
-            <Link to={mode === 'signup' ? '/login' : '/signup'} className="text-foreground font-medium hover:underline">
+            <Link to={mode === 'signup' ? '/login' : '/signup'} className="text-primary font-medium hover:underline">
               {mode === 'signup' ? 'Sign In' : 'Sign Up'}
             </Link>
           </p>
