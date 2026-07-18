@@ -61,7 +61,7 @@ These responsibilities belong to Railway.
                                   Client
                                      │
                                      ▼
-                              API Gateway
+                               API Gateway
                                      │
         ┌──────────────┬─────────────┴──────────────┐
         ▼              ▼                            ▼
@@ -71,17 +71,21 @@ These responsibilities belong to Railway.
                                                 ▼
                                         Validation Service
                                                 │
-                                         ValidationResult
-                                                │
-                                                ▼
-                                        Deployment Planner
-                                                │
-                                         DeploymentPlan
-                                                │
-                                           gRPC Request
-                                                ▼
+                              ┌─────────────────┤
+                              │ FAIL             │ PASS
+                              ▼                 ▼
+                         Return Errors    ┌─────┴───────────────────┐
+                         to User          │                         │
+                         (retry loop)     │ (parallel, async)       │ (main path)
+                                          ▼                         ▼
+                                 AI Validation Agent        Deployment Planner
+                                 (advisory only)                    │
+                                          │                  DeploymentPlan
+                                 Report → User Dashboard            │
+                                                               gRPC Request
+                                                                    ▼
 ──────────────────────────────────────────────────────────────────────────────
-                    Runtime Service (Ai-Agent/runtime-service)
+                    Runtime Service (runtime-service)
 ──────────────────────────────────────────────────────────────────────────────
                                                 │
                                                 ▼
@@ -106,23 +110,39 @@ Notification Service   ←────── NATS ──────→   AgentO
                  Redis
 
                  OpenTelemetry
+```                  AI Application Runtime
+                                                │
+                                   /execute  /health  /metadata
+
+──────────────────────────────────────────────────────────────────────────────
+
+Notification Service   ←────── NATS ──────→   AgentOps Service
+
+                 PostgreSQL (Platform)
+
+                 PostgreSQL (Authentication)
+
+                 Redis
+
+                 OpenTelemetry
 ```
 
 ---
 
 # Backend Components
 
-| Component              | Responsibility                           |
-| ---------------------- | ---------------------------------------- |
-| API Gateway            | Public entry point for every request     |
-| Authentication Service | Login, JWT, API Keys, Users              |
-| Project Service        | GitHub repositories and project metadata |
-| Deployment Service     | Deployment orchestration                 |
-| Validation Service     | Repository validation                    |
-| Deployment Planner     | Generates Deployment Plans               |
-| Runtime Service        | Runtime lifecycle management             |
-| Notification Service   | Email and WebSocket notifications        |
-| AgentOps Service       | Metrics, logs, traces and analytics      |
+| Component              | Responsibility                                              |
+| ---------------------- | ----------------------------------------------------------- |
+| API Gateway            | Public entry point for every request                        |
+| Authentication Service | Login, JWT, API Keys, Users                                 |
+| Project Service        | GitHub repositories and project metadata                    |
+| Deployment Service     | Deployment orchestration                                    |
+| Validation Service     | Deterministic repository validation (blocks on failure)     |
+| AI Validation Agent    | Advisory repository analysis (never blocks, async)          |
+| Deployment Planner     | Generates Deployment Plans                                  |
+| Runtime Service        | Runtime lifecycle management                                |
+| Notification Service   | Email and WebSocket notifications                           |
+| AgentOps Service       | Metrics, logs, traces and analytics                         |
 
 ---
 
@@ -151,17 +171,17 @@ Validation Service
 
 ValidationResult
 
-↓
-
-Deployment Planner
-
-↓
-
-DeploymentPlan
-
-↓
-
-gRPC
+┌─────────────────────────────────┤
+│ FAIL                            │ PASS
+▼                                 │
+Return errors to User             ├──────────────────────────────────────┐
+(User fixes repo and retries)     │ (main path)              (async)     │
+                                  ▼                                      ▼
+                          Deployment Planner                  AI Validation Agent
+                                  │                          (advisory, non-blocking)
+                          DeploymentPlan                               │
+                                  │                          Report → User Dashboard
+                          gRPC
 
 ↓
 
@@ -236,7 +256,11 @@ Validation Service
 * Validates endpoints
 * Validates entrypoints
 
-Returns
+If validation fails, errors are returned to the user.
+
+User fixes the repository and retries from Step 1.
+
+If validation passes, returns
 
 ```text
 ValidationResult
@@ -246,11 +270,11 @@ ValidationResult
 
 ## Step 4
 
-Deployment Planner receives
+Two things happen in parallel after validation passes.
 
-```text
-ValidationResult
-```
+**Main path (blocking):**
+
+Deployment Planner receives ValidationResult.
 
 Planner generates
 
@@ -265,6 +289,16 @@ The planner decides
 * Start command
 * Environment variables
 * Provider configuration
+
+**Async path (non-blocking):**
+
+AI Validation Agent receives the repository path.
+
+The AI agent runs repository analysis and sends a report to the User Dashboard.
+
+The AI agent never blocks or delays deployment.
+
+If the AI agent is unavailable, deployment continues without it.
 
 ---
 
@@ -399,7 +433,7 @@ Deployment Service
 
 ──────────────────────────────────────
 
-REST / gRPC
+REST (blocking)
 
 Deployment Service
 
@@ -407,9 +441,28 @@ Deployment Service
 
 Validation Service
 
+  If FAIL → errors returned to user → retry loop
+  If PASS → continue
+
 ──────────────────────────────────────
 
-Internal Planning
+REST (async, fire-and-forget)
+
+Deployment Service
+
+↓
+
+AI Validation Agent
+
+↓
+
+Report → User Dashboard
+
+(never blocks deployment)
+
+──────────────────────────────────────
+
+REST (blocking)
 
 Deployment Service
 
@@ -419,7 +472,7 @@ Deployment Planner
 
 ──────────────────────────────────────
 
-gRPC
+gRPC (blocking)
 
 Deployment Service
 
@@ -446,6 +499,9 @@ Railway API
 * Validation before planning
 * Planning before deployment
 * Deployment before runtime creation
+* Validation failure returns errors to user and stops deployment
+* AI Validation Agent is advisory only and never blocks deployment
+* AI Validation Agent runs async after validation passes
 * Runtime Service never parses repositories
 * Validation Service never communicates with Railway
 * Deployment Planner owns provider-specific deployment logic
