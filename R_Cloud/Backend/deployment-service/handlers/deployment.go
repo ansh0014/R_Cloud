@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -54,6 +55,12 @@ func (h *DeploymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	deployment, err := h.service.Deploy(r.Context(), deployReq)
 	if err != nil {
+		if errors.Is(err, service.ErrCircuitBreakerOpen) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"success":false,"error":"Validation Service is temporarily unavailable. Please try again later."}`))
+			return
+		}
 		utils.WriteError(w, http.StatusInternalServerError, "DEPLOYMENT_FAILED", err.Error())
 		return
 	}

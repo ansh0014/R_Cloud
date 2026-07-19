@@ -35,6 +35,7 @@ type DeploymentService struct {
 	gitTimeout            time.Duration
 	validationServiceURL  string
 	plannerServiceURL     string
+	breaker               *CircuitBreaker
 }
 
 func NewDeploymentService(
@@ -54,6 +55,7 @@ func NewDeploymentService(
 		gitTimeout:           gitTimeout,
 		validationServiceURL: validationServiceURL,
 		plannerServiceURL:    plannerServiceURL,
+		breaker:              NewCircuitBreaker(5, 30*time.Second),
 	}
 }
 
@@ -157,13 +159,21 @@ func (s *DeploymentService) ListDeployments(projectID string) ([]*models.Deploym
 }
 
 func (s *DeploymentService) callValidationService(ctx context.Context, repoDir string) (*ValidationResult, error) {
+	if !s.breaker.CanExecute() {
+		return nil, ErrCircuitBreakerOpen
+	}
+
 	body, _ := json.Marshal(map[string]string{"repoDir": repoDir})
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+	reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost,
 		s.validationServiceURL+"/validate",
 		strings.NewReader(string(body)),
 	)
 	if err != nil {
+		s.breaker.RecordFailure()
 		return nil, fmt.Errorf("failed to build validation request: %w", err)
 	}
 
@@ -171,19 +181,23 @@ func (s *DeploymentService) callValidationService(ctx context.Context, repoDir s
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		s.breaker.RecordFailure()
 		return nil, fmt.Errorf("validation service unreachable: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		s.breaker.RecordFailure()
 		return nil, fmt.Errorf("validation service returned status %s", resp.Status)
 	}
 
 	var result ValidationResult
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		s.breaker.RecordFailure()
 		return nil, fmt.Errorf("failed to parse validation response: %w", err)
 	}
 
+	s.breaker.RecordSuccess()
 	return &result, nil
 }
 
