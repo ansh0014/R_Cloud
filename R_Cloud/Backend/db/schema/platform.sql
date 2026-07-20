@@ -1,5 +1,3 @@
-
-
 CREATE TABLE IF NOT EXISTS projects (
     id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id          UUID         NOT NULL,
@@ -17,17 +15,19 @@ CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
 
 
 CREATE TABLE IF NOT EXISTS deployments (
-    id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id   UUID        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    user_id      UUID        NOT NULL,
-    branch       VARCHAR(100) NOT NULL,
-    commit_hash  VARCHAR(100),
-    version      VARCHAR(50),
-    mode         VARCHAR(50)  NOT NULL CHECK (mode IN ('monolith', 'microservices')),
-    status       VARCHAR(50)  NOT NULL DEFAULT 'VALIDATING'
-                              CHECK (status IN ('VALIDATING', 'DEPLOYING', 'RUNNING', 'FAILED', 'STOPPED', 'DELETED')),
-    created_at   TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMPTZ
+    id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id    UUID         NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id       UUID         NOT NULL,
+    branch        VARCHAR(100) NOT NULL,
+    commit_hash   VARCHAR(100),
+    version       VARCHAR(50),
+    mode          VARCHAR(50)  NOT NULL CHECK (mode IN ('monolith', 'microservices')),
+    status        VARCHAR(50)  NOT NULL DEFAULT 'VALIDATING'
+                               CHECK (status IN ('PENDING', 'VALIDATING', 'PLANNING', 'DEPLOYING', 'RUNNING', 'FAILED', 'STOPPED', 'DELETED')),
+    error_message TEXT,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at  TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_deployments_project_id ON deployments(project_id);
