@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package rcloud.common;
+
+option go_package = "github.com/r-cloud/shared/proto/common";
+
+// Common Error Response
+message ErrorDetails {
+  int32  code    = 1;
+  string message = 2;
+  string details = 3;
+}
+
+// Common Key-Value Pair
+message StringMapEntry {
+  string key   = 1;
+  string value = 2;
+}
+
+// Agent Capability & Metadata
+message AgentMetadata {
+  string          id           = 1;
+  string          name         = 2;
+  string          version      = 3;
+  string          framework    = 4;
+  repeated string capabilities = 5;
+}
+
+// Common Pagination
+message PaginationRequest {
+  int32 page  = 1;
+  int32 limit = 2;
+}
+
+message PaginationResponse {
+  int32 page        = 1;
+  int32 limit       = 2;
+  int32 total_items = 3;
+  int32 total_pages = 4;
+}

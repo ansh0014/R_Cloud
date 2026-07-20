@@ -5,16 +5,11 @@ package rcloud.runtime;
 option go_package = "github.com/r-cloud/shared/proto/runtime";
 
 service RuntimeService {    
-  rpc CreateRuntime  (CreateRuntimeRequest)  returns (CreateRuntimeResponse);
-  rpc StopRuntime    (StopRuntimeRequest)    returns (StopRuntimeResponse);
-  rpc RestartRuntime (RestartRuntimeRequest) returns (RestartRuntimeResponse);
-  rpc DeleteRuntime  (DeleteRuntimeRequest)  returns (DeleteRuntimeResponse);
+  rpc CreateRuntime    (CreateRuntimeRequest)    returns (CreateRuntimeResponse);
+  rpc StopRuntime      (StopRuntimeRequest)      returns (StopRuntimeResponse);
+  rpc RestartRuntime   (RestartRuntimeRequest)   returns (RestartRuntimeResponse);
+  rpc DeleteRuntime    (DeleteRuntimeRequest)    returns (DeleteRuntimeResponse);
   rpc GetRuntimeStatus (GetRuntimeStatusRequest) returns (GetRuntimeStatusResponse);
-}
-
-enum DeploymentMode {
-  MONOLITH      = 0;
-  MICROSERVICES = 1;
 }
 
 enum RuntimeStatus {
@@ -33,18 +28,24 @@ enum HealthStatus {
   UNKNOWN   = 3;
 }
 
-message Agent {
-  string id         = 1;
-  string entrypoint = 2;
+message ServicePlan {
+  string name           = 1;
+  string entrypoint     = 2;
+  string execute_route  = 3;
+  string health_route   = 4;
+  string metadata_route = 5;
 }
 
 message CreateRuntimeRequest {
   string              deployment_id = 1;
-  string              repo_url      = 2;
-  string              branch        = 3;
-  DeploymentMode      mode          = 4;
-  repeated Agent      agents        = 5;
-  map<string, string> env_vars      = 6;
+  string              provider      = 2;
+  string              mode          = 3;
+  string              runtime       = 4;
+  string              framework     = 5;
+  string              build_command = 6;
+  string              start_command = 7;
+  map<string, string> environment   = 8;
+  repeated ServicePlan services     = 9;
 }
 
 message DeployedAgent {
