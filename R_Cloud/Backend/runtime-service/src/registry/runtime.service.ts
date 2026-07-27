@@ -1,0 +1,251 @@
+import { getProvider } from '../providers/provider.factory.js'
+import { runtimeRepository } from './runtime.repository.js'
+import { db } from '../database/postgres.js'
+import { publishEvent } from '../events/publisher.js'
+import { RuntimeEvent } from '../constants/events.constants.js'
+import { RuntimeStatus, HealthStatus } from '../constants/runtime.constants.js'
+import { logger } from '../telemetry/logger.js'
+import { 
+  CreateRuntimeRequest, 
+  CreateRuntimeResponse, 
+  StopRuntimeRequest, 
+  StopRuntimeResponse,
+  RestartRuntimeRequest,
+  RestartRuntimeResponse,
+  DeleteRuntimeRequest,
+  DeleteRuntimeResponse,
+  GetRuntimeStatusRequest,
+  GetRuntimeStatusResponse,
+  AgentStatus
+} from '../types/grpc.types.js'
+import { railwayClient } from '../providers/railway/railway.client.js'
+
+export class RuntimeService {
+  
+  /**
+   * Orchestrates the creation of a runtime project and deployment on the provider.
+   */
+  async createRuntime(req: CreateRuntimeRequest): Promise<CreateRuntimeResponse> {
+    logger.info({ deploymentId: req.deployment_id, provider: req.provider }, 'Starting runtime creation')
+
+    // 1. Save initial creating record to Postgres DB
+    // We need a railwayProjectId, we'll get it from the provider in the next step,
+    // so we initially pass an empty string and update it.
+    const runtimeRecord = await runtimeRepository.createRuntime(
+      req.deployment_id,
+      '' // placeholder
+    )
+    const runtimeId = runtimeRecord.id
+
+    try {
+      // 2. Provision resources on Railway
+      const provider = getProvider(req.provider)
+      const provisionResult = await provider.provision(req)
+
+      // 3. Update the runtime_registry table with project details
+      await runtimeRepository.updateRuntimeStatus(runtimeId, RuntimeStatus.RUNNING, HealthStatus.HEALTHY)
+      
+      // Update railway_project_id in DB (raw SQL UPDATE)
+      const updateQuery = 'UPDATE runtime_registry SET railway_project_id = $1, runtime_url = $2 WHERE id = $3;'
+      // Find main service URL to use as overall runtime url
+      const mainService = provisionResult.services.find(s => s.name === 'main') || provisionResult.services[0]
+      await db.query(updateQuery, [provisionResult.projectId, mainService.url, runtimeId])
+
+      // 4. Save each service/agent record to agent_registry table
+      const agentsList = []
+      for (const service of provisionResult.services) {
+        const agentRecord = await runtimeRepository.createAgent(
+          runtimeId,
+          service.name,
+          service.url,
+          service.serviceId
+        )
+
+        // Try to fetch agent metadata if GET /metadata route is implemented
+        try {
+          logger.info({ agentName: service.name, url: service.url }, 'Fetching agent metadata')
+          const metadataUrl = `${service.url}/metadata`
+          const response = await fetch(metadataUrl, { signal: AbortSignal.timeout(5000) })
+          if (response.ok) {
+            const metadata = await response.json() as any
+            await runtimeRepository.updateAgentMetadata(
+              agentRecord.id,
+              metadata.framework || req.framework,
+              metadata.version || '1.0.0',
+              metadata.capabilities || []
+            )
+            logger.info({ agentName: service.name }, 'Fetched and updated agent metadata successfully')
+          }
+        } catch (metadataErr) {
+          logger.warn({ metadataErr, agentName: service.name }, 'Failed to fetch agent metadata, continuing')
+        }
+
+        agentsList.push({
+          agent_id: service.name,
+          agent_url: service.url
+        })
+      }
+
+      // 5. Broadcast runtime started event via NATS
+      publishEvent(RuntimeEvent.STARTED, {
+        runtimeId,
+        deploymentId: req.deployment_id,
+        runtimeUrl: mainService.url
+      })
+
+      return {
+        runtime_id: runtimeId,
+        status: RuntimeStatus.RUNNING,
+        agents: agentsList
+      }
+
+    } catch (error) {
+      logger.error({ error, runtimeId }, 'Failed to create runtime. Reverting status to FAILED')
+      await runtimeRepository.updateRuntimeStatus(runtimeId, RuntimeStatus.FAILED, HealthStatus.UNHEALTHY)
+      
+      publishEvent(RuntimeEvent.FAILED, {
+        runtimeId,
+        deploymentId: req.deployment_id,
+        reason: error instanceof Error ? error.message : 'Unknown provisioning error'
+      })
+      
+      throw error
+    }
+  }
+
+  /**
+   * Stops a running runtime.
+   */
+  async stopRuntime(req: StopRuntimeRequest): Promise<StopRuntimeResponse> {
+    logger.info({ runtimeId: req.runtime_id }, 'Stopping runtime')
+
+    const runtime = await runtimeRepository.getRuntime(req.runtime_id)
+    if (!runtime) {
+      throw new Error(`Runtime not found: ${req.runtime_id}`)
+    }
+
+    await runtimeRepository.updateRuntimeStatus(req.runtime_id, RuntimeStatus.STOPPED, HealthStatus.UNKNOWN)
+    
+    publishEvent(RuntimeEvent.STOPPED, {
+      runtimeId: req.runtime_id,
+      deploymentId: req.deployment_id
+    })
+
+    return {
+      runtime_id: req.runtime_id,
+      status: RuntimeStatus.STOPPED,
+      message: 'Runtime stopped successfully'
+    }
+  }
+
+  /**
+   * Restarts all services associated with a runtime.
+   */
+  async restartRuntime(req: RestartRuntimeRequest): Promise<RestartRuntimeResponse> {
+    logger.info({ runtimeId: req.runtime_id }, 'Restarting runtime')
+
+    const runtime = await runtimeRepository.getRuntime(req.runtime_id)
+    if (!runtime) {
+      throw new Error(`Runtime not found: ${req.runtime_id}`)
+    }
+
+    const agents = await runtimeRepository.getAgentsByRuntime(req.runtime_id)
+    if (!agents || agents.length === 0) {
+      throw new Error(`No agents registered for runtime: ${req.runtime_id}`)
+    }
+
+    await runtimeRepository.updateRuntimeStatus(req.runtime_id, RuntimeStatus.RESTARTING, HealthStatus.STARTING)
+
+    try {
+      // Restart every agent container in Railway
+      for (const agent of agents) {
+        if (agent.railway_service_id) {
+          logger.info({ agentName: agent.name, serviceId: agent.railway_service_id }, 'Restarting Railway service')
+          await railwayClient.restartService(agent.railway_service_id)
+        }
+      }
+
+      await runtimeRepository.updateRuntimeStatus(req.runtime_id, RuntimeStatus.RUNNING, HealthStatus.HEALTHY)
+      await runtimeRepository.incrementRestartCount(req.runtime_id)
+
+      publishEvent(RuntimeEvent.RESTARTED, {
+        runtimeId: req.runtime_id,
+        restartCount: runtime.restart_count + 1
+      })
+
+      return {
+        runtime_id: req.runtime_id,
+        status: RuntimeStatus.RUNNING,
+        message: 'Runtime restarted successfully'
+      }
+    } catch (err) {
+      logger.error({ err, runtimeId: req.runtime_id }, 'Failed to restart runtime')
+      await runtimeRepository.updateRuntimeStatus(req.runtime_id, RuntimeStatus.FAILED, HealthStatus.UNHEALTHY)
+      throw err
+    }
+  }
+
+  /**
+   * Deletes the Railway project and updates status in database.
+   */
+  async deleteRuntime(req: DeleteRuntimeRequest): Promise<DeleteRuntimeResponse> {
+    logger.info({ runtimeId: req.runtime_id }, 'Deleting runtime')
+
+    const runtime = await runtimeRepository.getRuntime(req.runtime_id)
+    if (!runtime) {
+      throw new Error(`Runtime not found: ${req.runtime_id}`)
+    }
+
+    try {
+      if (runtime.railway_project_id) {
+        logger.info({ projectId: runtime.railway_project_id }, 'Deleting Railway project')
+        await railwayClient.deleteProject(runtime.railway_project_id)
+      }
+
+      await runtimeRepository.updateRuntimeStatus(req.runtime_id, RuntimeStatus.DELETED, HealthStatus.UNKNOWN)
+
+      publishEvent(RuntimeEvent.DELETED, {
+        runtimeId: req.runtime_id,
+        deploymentId: req.deployment_id
+      })
+
+      return {
+        success: true,
+        message: 'Runtime deleted successfully'
+      }
+    } catch (err) {
+      logger.error({ err, runtimeId: req.runtime_id }, 'Failed to delete runtime')
+      throw err
+    }
+  }
+
+  /**
+   * Retrieves runtime details and lists agent status.
+   */
+  async getRuntimeStatus(req: GetRuntimeStatusRequest): Promise<GetRuntimeStatusResponse> {
+    logger.info({ runtimeId: req.runtime_id }, 'Retrieving runtime status')
+
+    const runtime = await runtimeRepository.getRuntime(req.runtime_id)
+    if (!runtime) {
+      throw new Error(`Runtime not found: ${req.runtime_id}`)
+    }
+
+    const agents = await runtimeRepository.getAgentsByRuntime(req.runtime_id)
+
+    const agentStatuses: AgentStatus[] = (agents || []).map((agent) => ({
+      agent_id: agent.name,
+      agent_url: agent.agent_url,
+      health: runtime.health as HealthStatus
+    }))
+
+    return {
+      runtime_id: req.runtime_id,
+      status: runtime.status as RuntimeStatus,
+      overall_health: runtime.health as HealthStatus,
+      last_checked_at: runtime.updated_at ? runtime.updated_at.toISOString() : runtime.created_at.toISOString(),
+      agents: agentStatuses
+    }
+  }
+}
+
+export const runtimeService = new RuntimeService()
