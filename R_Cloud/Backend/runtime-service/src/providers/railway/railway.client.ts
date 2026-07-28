@@ -32,9 +32,7 @@ export class RailwayClient {
     }
   }
 
-  /**
-   * STEP 1: Create an empty bucket (Project)
-   */
+  
   async createProject(name: string) {
     const query = `
       mutation CreateProject($name: String!) {
@@ -147,9 +145,7 @@ export class RailwayClient {
     return edge ? (edge.node.status as string) : 'UNKNOWN'
   }
 
-  /**
-   * STEP 7: Create a public domain for a service (so we can call its endpoints)
-   */
+  
   async createServiceDomain(environmentId: string, serviceId: string): Promise<string> {
     const query = `
       mutation CreateServiceDomain($environmentId: String!, $serviceId: String!) {

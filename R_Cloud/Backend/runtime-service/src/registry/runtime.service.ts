@@ -22,36 +22,30 @@ import { railwayClient } from '../providers/railway/railway.client.js'
 
 export class RuntimeService {
   
-  /**
-   * Orchestrates the creation of a runtime project and deployment on the provider.
-   */
+
   async createRuntime(req: CreateRuntimeRequest): Promise<CreateRuntimeResponse> {
     logger.info({ deploymentId: req.deployment_id, provider: req.provider }, 'Starting runtime creation')
 
-    // 1. Save initial creating record to Postgres DB
-    // We need a railwayProjectId, we'll get it from the provider in the next step,
-    // so we initially pass an empty string and update it.
     const runtimeRecord = await runtimeRepository.createRuntime(
       req.deployment_id,
-      '' // placeholder
+      '' 
     )
     const runtimeId = runtimeRecord.id
 
     try {
-      // 2. Provision resources on Railway
+
       const provider = getProvider(req.provider)
       const provisionResult = await provider.provision(req)
 
-      // 3. Update the runtime_registry table with project details
       await runtimeRepository.updateRuntimeStatus(runtimeId, RuntimeStatus.RUNNING, HealthStatus.HEALTHY)
       
-      // Update railway_project_id in DB (raw SQL UPDATE)
+ 
       const updateQuery = 'UPDATE runtime_registry SET railway_project_id = $1, runtime_url = $2 WHERE id = $3;'
-      // Find main service URL to use as overall runtime url
+ 
       const mainService = provisionResult.services.find(s => s.name === 'main') || provisionResult.services[0]
       await db.query(updateQuery, [provisionResult.projectId, mainService.url, runtimeId])
 
-      // 4. Save each service/agent record to agent_registry table
+
       const agentsList = []
       for (const service of provisionResult.services) {
         const agentRecord = await runtimeRepository.createAgent(
@@ -61,7 +55,7 @@ export class RuntimeService {
           service.serviceId
         )
 
-        // Try to fetch agent metadata if GET /metadata route is implemented
+
         try {
           logger.info({ agentName: service.name, url: service.url }, 'Fetching agent metadata')
           const metadataUrl = `${service.url}/metadata`
@@ -86,7 +80,7 @@ export class RuntimeService {
         })
       }
 
-      // 5. Broadcast runtime started event via NATS
+      
       publishEvent(RuntimeEvent.STARTED, {
         runtimeId,
         deploymentId: req.deployment_id,

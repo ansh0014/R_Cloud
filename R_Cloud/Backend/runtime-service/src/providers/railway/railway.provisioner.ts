@@ -4,12 +4,10 @@ import { ProvisionResult, DeployedService } from '../../types/provider.types.js'
 import { logger } from '../../telemetry/logger.js'
 import { db } from '../../database/postgres.js'
 
-/**
- * Polls Railway API until the service deployment succeeds or fails
- */
+
 async function waitForDeployment(serviceId: string, environmentId: string): Promise<void> {
-  const timeoutMs = 10 * 60 * 1000 // 10 minutes max for build + deploy
-  const intervalMs = 10000 // 10 seconds polling interval
+  const timeoutMs = 10 * 60 * 1000 // 10 minutes 
+  const intervalMs = 10000 
   const startTime = Date.now()
 
   while (Date.now() - startTime < timeoutMs) {
@@ -35,9 +33,7 @@ async function waitForDeployment(serviceId: string, environmentId: string): Prom
   throw new Error('Railway deployment timed out')
 }
 
-/**
- * Fetches github_repo_url and branch for a deployment by querying PostgreSQL
- */
+
 async function getDeploymentRepoInfo(deploymentId: string): Promise<{ repoUrl: string; branch: string }> {
   const query = `
     SELECT p.github_repo_url as "repoUrl", d.branch
@@ -62,42 +58,36 @@ async function getDeploymentRepoInfo(deploymentId: string): Promise<{ repoUrl: s
   }
 }
 
-/**
- * Provision a monolith runtime on Railway (single container)
- */
+
 export async function provisionMonolith(req: CreateRuntimeRequest): Promise<ProvisionResult> {
   logger.info({ deploymentId: req.deployment_id }, 'Provisioning Monolith Runtime on Railway')
 
   const { repoUrl, branch } = await getDeploymentRepoInfo(req.deployment_id)
 
-  // 1. Create a Railway project
   const projectName = `rcloud-monolith-${req.deployment_id.substring(0, 8)}`
   const { projectId, environmentId } = await railwayClient.createProject(projectName)
   logger.info({ projectId, environmentId }, 'Created Railway project')
 
-  // 2. Create the service with code repository and start command
+  
   const startCommand = req.start_command || 'python app.py'
   const serviceId = await railwayClient.createService(projectId, repoUrl, branch, startCommand)
   logger.info({ serviceId }, 'Created Railway service')
 
-  // 3. Inject env variables
   if (req.environment && Object.keys(req.environment).length > 0) {
     await railwayClient.setEnvironmentVariables(projectId, environmentId, serviceId, req.environment)
     logger.info('Injected environment variables')
   }
 
-  // 4. Create public domain for the service
   const domain = await railwayClient.createServiceDomain(environmentId, serviceId)
   const serviceUrl = `https://${domain}`
   logger.info({ serviceUrl }, 'Provisioned public domain')
 
-  // 5. Wait for Railway deployment to complete successfully
   await waitForDeployment(serviceId, environmentId)
 
   const deployedService: DeployedService = {
     name: 'main',
     serviceId,
-    url: serviceUrl
+    url: serviceUrl   
   }
 
   return {
@@ -107,9 +97,8 @@ export async function provisionMonolith(req: CreateRuntimeRequest): Promise<Prov
   }
 }
 
-/**
- * Provision a microservices runtime on Railway (one container per agent)
- */
+
+
 export async function provisionMicroservices(req: CreateRuntimeRequest): Promise<ProvisionResult> {
   logger.info({ deploymentId: req.deployment_id }, 'Provisioning Microservices Runtime on Railway')
 
