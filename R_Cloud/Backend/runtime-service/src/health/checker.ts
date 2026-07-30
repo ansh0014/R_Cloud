@@ -12,7 +12,6 @@ export async function checkAgentHealth(agentUrl: string): Promise<boolean> {
 
   try {
     const controller = new AbortController()
-    // Enforce configured timeout (default: 5 seconds)
     const timeoutId = setTimeout(() => controller.abort(), config.HEALTH_CHECK_TIMEOUT_MS)
 
     const response = await fetch(healthUrl, {

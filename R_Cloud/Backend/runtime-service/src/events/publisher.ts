@@ -10,7 +10,6 @@ export async function connectNATS(): Promise<void> {
     logger.info({ natsUrl: config.NATS_URL }, 'Connecting to NATS')
     natsConn = await connect({ 
       servers: config.NATS_URL,
-      // Avoid failing immediately in dev if NATS server is down
       reconnect: true,
       maxReconnectAttempts: 10,
     })

@@ -28,13 +28,10 @@ export async function handleUnhealthyRuntime(runtimeId: string): Promise<void> {
         'Unhealthy runtime is under the restart limit. Initiating service restart...'
       )
 
-      // 1. Set state to RESTARTING and UNHEALTHY in the database
       await runtimeRepository.updateRuntimeStatus(runtimeId, RuntimeStatus.RESTARTING, HealthStatus.UNHEALTHY)
 
-      // 2. Fetch all registered agents to get their Railway service IDs
       const agents = await runtimeRepository.getAgentsByRuntime(runtimeId)
 
-      // 3. Command Railway API to redeploy/restart each service
       for (const agent of agents) {
         if (agent.railway_service_id) {
           logger.info(
@@ -45,10 +42,8 @@ export async function handleUnhealthyRuntime(runtimeId: string): Promise<void> {
         }
       }
 
-      // 4. Increment the restart counter in PostgreSQL
       const updatedRuntime = await runtimeRepository.incrementRestartCount(runtimeId)
 
-      // 5. Publish NATS event: runtime.restarted
       publishEvent(RuntimeEvent.RESTARTED, {
         runtimeId,
         restartCount: updatedRuntime.restart_count
@@ -61,10 +56,8 @@ export async function handleUnhealthyRuntime(runtimeId: string): Promise<void> {
         'Runtime exceeded maximum restart attempts. Marking as FAILED.'
       )
 
-      // Transition to permanent FAILED state
       await runtimeRepository.updateRuntimeStatus(runtimeId, RuntimeStatus.FAILED, HealthStatus.UNHEALTHY)
 
-      // Publish NATS event: runtime.failed
       publishEvent(RuntimeEvent.FAILED, {
         runtimeId,
         reason: `Exceeded maximum auto-restart attempts (${maxAttempts})`

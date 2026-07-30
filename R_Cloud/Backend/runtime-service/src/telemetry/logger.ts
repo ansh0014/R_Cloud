@@ -1,15 +1,6 @@
 import pino from 'pino'
 import { config } from '../config/config.js'
 
-/**
- * Centralized Pino logger for the Runtime Service.
- *
- * Usage:
- *   import { logger } from '../telemetry/logger.js'
- *   logger.info('Server started')
- *   logger.error({ err }, 'Something went wrong')
- *   logger.info({ runtimeId, deploymentId }, 'Runtime created')
- */
 export const logger = pino({
   level: config.LOG_LEVEL,
 
@@ -26,7 +17,6 @@ export const logger = pino({
         }
       : undefined,
 
-  // Base fields on every log line
   base: {
     service: config.OTEL_SERVICE_NAME,
     env: config.NODE_ENV,
@@ -35,7 +25,6 @@ export const logger = pino({
   // Rename 'msg' → 'message' for compatibility with log aggregators
   messageKey: 'message',
 
-  // ISO timestamp on every line
   timestamp: pino.stdTimeFunctions.isoTime,
 })
 

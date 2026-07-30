@@ -6,8 +6,7 @@ import { resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions'
 import { config } from '../config/config.js'
 
-// Only export to OTLP collector if the endpoint is configured.
-// In development without a collector running, traces are just dropped silently.
+
 const traceExporter = config.OTEL_EXPORTER_OTLP_ENDPOINT
   ? new OTLPTraceExporter({
       url: `${config.OTEL_EXPORTER_OTLP_ENDPOINT}/v1/traces`,
@@ -18,13 +17,11 @@ const traceExporter = config.OTEL_EXPORTER_OTLP_ENDPOINT
   : undefined
 
 const sdk = new NodeSDK({
-  // Identify this service in every trace
   resource: resourceFromAttributes({
     [ATTR_SERVICE_NAME]: config.OTEL_SERVICE_NAME,
     'service.version': '1.0.0',
   }),
 
-  // Auto-instrument: grpc-js, http, pg, fetch — no manual span code needed
   instrumentations: [
     getNodeAutoInstrumentations({
       // Disable noisy fs instrumentation (file reads create too many spans)

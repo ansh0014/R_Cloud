@@ -11,7 +11,6 @@ async function bootstrap() {
   try {
     logger.info('Starting Runtime Service bootstrap...')
 
-    // 1. Connect to PostgreSQL
     try {
       await connectDatabase()
     } catch (err) {
@@ -22,10 +21,8 @@ async function bootstrap() {
       logger.warn('Continuing bootstrap without PostgreSQL connection (development mode)')
     }
 
-    // 2. Connect to NATS Event Bus
     await connectNATS()
 
-    // 3. Start the gRPC server
     await startGrpcServer()
 
     logger.info('Runtime Service fully initialized and running.')

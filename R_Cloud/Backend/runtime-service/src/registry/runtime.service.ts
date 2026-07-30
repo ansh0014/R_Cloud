@@ -107,9 +107,6 @@ export class RuntimeService {
     }
   }
 
-  /**
-   * Stops a running runtime.
-   */
   async stopRuntime(req: StopRuntimeRequest): Promise<StopRuntimeResponse> {
     logger.info({ runtimeId: req.runtime_id }, 'Stopping runtime')
 
@@ -132,9 +129,7 @@ export class RuntimeService {
     }
   }
 
-  /**
-   * Restarts all services associated with a runtime.
-   */
+
   async restartRuntime(req: RestartRuntimeRequest): Promise<RestartRuntimeResponse> {
     logger.info({ runtimeId: req.runtime_id }, 'Restarting runtime')
 
@@ -179,9 +174,7 @@ export class RuntimeService {
     }
   }
 
-  /**
-   * Deletes the Railway project and updates status in database.
-   */
+
   async deleteRuntime(req: DeleteRuntimeRequest): Promise<DeleteRuntimeResponse> {
     logger.info({ runtimeId: req.runtime_id }, 'Deleting runtime')
 
@@ -213,9 +206,7 @@ export class RuntimeService {
     }
   }
 
-  /**
-   * Retrieves runtime details and lists agent status.
-   */
+ 
   async getRuntimeStatus(req: GetRuntimeStatusRequest): Promise<GetRuntimeStatusResponse> {
     logger.info({ runtimeId: req.runtime_id }, 'Retrieving runtime status')
 

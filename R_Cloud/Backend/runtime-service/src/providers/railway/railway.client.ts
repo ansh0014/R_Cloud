@@ -4,7 +4,6 @@ import { RailwayApiError } from '../../errors/railway.error.js'
 export class RailwayClient {
   private readonly apiUrl = 'https://backboard.railway.app/graphql/v2'
   
-  // Every request MUST have this token, otherwise Railway rejects us
   private readonly headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${config.RAILWAY_API_TOKEN}`
@@ -22,7 +21,6 @@ export class RailwayClient {
       })
       const json = (await response.json()) as any
       
-      // If Railway returns a GraphQL error array, throw it!
       if (json.errors) {
         throw new Error(json.errors[0].message)
       }
@@ -59,9 +57,6 @@ export class RailwayClient {
     }
   }
 
-  /**
-   * STEP 2: Connect GitHub Repo and boot up the code (Service)
-   */
   async createService(projectId: string, repoUrl: string, branch: string, startCommand: string) {
     const query = `
       mutation CreateService($projectId: String!, $repoUrl: String!, $branch: String!, $startCommand: String!) {
@@ -83,9 +78,6 @@ export class RailwayClient {
     return data.serviceCreate.id as string
   }
 
-  /**
-   * STEP 3: Inject the Environment Variables so the code doesn't crash
-   */
   async setEnvironmentVariables(projectId: string, environmentId: string, serviceId: string, envVars: Record<string, string>) {
     const query = `
       mutation UpsertVariables($projectId: String!, $environmentId: String!, $serviceId: String!, $variables: Object!) {
@@ -101,9 +93,6 @@ export class RailwayClient {
     await this.executeQuery(query, variables)
   }
 
-  /**
-   * STEP 4: Delete an entire project (and all its agents)
-   */
   async deleteProject(projectId: string) {
     const query = `
       mutation DeleteProject($projectId: String!) {
@@ -113,9 +102,6 @@ export class RailwayClient {
     await this.executeQuery(query, { projectId })
   }
 
-  /**
-   * STEP 5: Restart a specific agent (if it crashes)
-   */
   async restartService(serviceId: string) {
     const query = `
       mutation RestartService($serviceId: String!) {
@@ -125,9 +111,6 @@ export class RailwayClient {
     await this.executeQuery(query, { serviceId })
   }
 
-  /**
-   * STEP 6: Get the latest deployment status for a service in an environment
-   */
   async getLatestDeploymentStatus(serviceId: string, environmentId: string): Promise<string> {
     const query = `
       query GetLatestDeploymentStatus($serviceId: String!, $environmentId: String!) {
@@ -162,5 +145,4 @@ export class RailwayClient {
   }
 }
 
-// Export a single instance (Singleton) to use everywhere
 export const railwayClient = new RailwayClient()

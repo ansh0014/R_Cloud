@@ -24,7 +24,6 @@ export function startHealthScheduler(): void {
 
   intervalId = setInterval(async () => {
     try {
-      // 1. Fetch all runtimes that are currently active (RUNNING or RESTARTING)
       const query = `
         SELECT * FROM runtime_registry 
         WHERE status IN ($1, $2);
@@ -54,7 +53,6 @@ export function startHealthScheduler(): void {
         let allAgentsHealthy = true
         let failedAgentUrl = ''
 
-        // Check health of each agent URL
         for (const agent of agents) {
           if (!agent.agent_url) continue
 
@@ -75,13 +73,11 @@ export function startHealthScheduler(): void {
         } else {
           logger.warn({ runtimeId, failedAgentUrl }, 'Runtime health check failed!')
           
-          // Publish NATS alert: health.failed
           publishEvent('health.failed', {
             runtimeId,
             url: failedAgentUrl
           })
 
-          // Trigger auto-restart or failure state transition
           await handleUnhealthyRuntime(runtimeId)
         }
       }

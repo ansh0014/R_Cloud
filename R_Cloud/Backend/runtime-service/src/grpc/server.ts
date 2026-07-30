@@ -15,7 +15,6 @@ import { healthRuntimeHandler } from './handlers/health-runtime.handler.js'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Resolve absolute path to proto/runtime.proto
 const PROTO_PATH = path.resolve(__dirname, '../../../../proto/runtime.proto')
 
 let server: grpc.Server | null = null
@@ -42,7 +41,6 @@ export async function startGrpcServer(): Promise<void> {
 
       server = new grpc.Server()
 
-      // Register all 5 RPC methods using our convenience interceptor composer
       server.addService(runtimeProto.RuntimeService.service, {
         CreateRuntime: withInterceptors('CreateRuntime', createRuntimeHandler),
         StopRuntime: withInterceptors('StopRuntime', stopRuntimeHandler),
