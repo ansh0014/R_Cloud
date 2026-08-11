@@ -53,6 +53,18 @@ export interface SystemStats {
   totalRequests: number;
 }
 
+export interface DeploymentHistoryItem {
+  id: string;
+  agentId: string;
+  agentName: string;
+  project: string;
+  branch: string;
+  durationMs: number;
+  status: 'Success' | 'Failed';
+  timestamp: string;
+  commitMsg: string;
+}
+
 export interface DashboardState {
   agents: Agent[];
   traces: Trace[];
@@ -63,6 +75,7 @@ export interface DashboardState {
     isFailureActive: boolean;
     isRestartLoopActive: boolean;
   };
+  deploymentHistory: DeploymentHistoryItem[];
 }
 
 // --- Initial Mock Data ---
@@ -252,34 +265,94 @@ const loadPersistedWS = () => {
   return true;
 };
 
+const loadPersistedAgents = (): Agent[] => {
+  try {
+    const custom = localStorage.getItem('r_cloud_custom_agents');
+    if (custom) {
+      const parsed = JSON.parse(custom) as Agent[];
+      const ids = new Set(initialAgents.map(a => a.id));
+      const filtered = parsed.filter(a => !ids.has(a.id));
+      return [...initialAgents, ...filtered];
+    }
+  } catch (e) {}
+  return initialAgents;
+};
+
+const loadPersistedHistory = (): DeploymentHistoryItem[] => {
+  try {
+    const history = localStorage.getItem('r_cloud_deployment_history');
+    if (history) {
+      return JSON.parse(history);
+    }
+  } catch (e) {}
+  return [
+    {
+      id: 'dep-109',
+      agentId: 'agent-1',
+      agentName: 'Customer-Support-Bot',
+      project: 'E-Commerce Platform',
+      branch: 'main',
+      durationMs: 5120,
+      status: 'Success',
+      timestamp: '2026-07-08T09:42:00Z',
+      commitMsg: 'feat: add pricing query context parser'
+    },
+    {
+      id: 'dep-108',
+      agentId: 'agent-2',
+      agentName: 'DevOps-Code-Reviewer',
+      project: 'CI/CD Toolchain',
+      branch: 'main',
+      durationMs: 8240,
+      status: 'Success',
+      timestamp: '2026-07-08T08:12:00Z',
+      commitMsg: 'refactor: use localized external store check-in'
+    },
+    {
+      id: 'dep-107',
+      agentId: 'agent-4',
+      agentName: 'Security-Scanner',
+      project: 'Infra Auditing',
+      branch: 'main',
+      durationMs: 9140,
+      status: 'Failed',
+      timestamp: '2026-07-08T07:22:00Z',
+      commitMsg: 'fix: scanner port binding conflicts'
+    }
+  ];
+};
+
+const activeAgents = loadPersistedAgents();
+
 // Sync initial agents statuses with stored controls on boot
-const syncInitialState = () => {
+const syncInitialState = (agentsList: Agent[]) => {
   const controls = loadPersistedControls();
-  if (controls.isFailureActive) {
-    initialAgents[0].status = 'Failed';
-    initialAgents[0].healthStatus = 'unhealthy';
-    initialAgents[0].logs.push(`[SYSTEM] ${new Date().toISOString()} - Container startup failed due to simulated admin override.`);
+  if (controls.isFailureActive && agentsList.length > 0) {
+    agentsList[0].status = 'Failed';
+    agentsList[0].healthStatus = 'unhealthy';
+    agentsList[0].logs.push(`[SYSTEM] ${new Date().toISOString()} - Container startup failed due to simulated admin override.`);
   }
-  if (controls.isRestartLoopActive) {
-    initialAgents[1].status = 'Restarting';
-    initialAgents[1].healthStatus = 'unhealthy';
+  if (controls.isRestartLoopActive && agentsList.length > 1) {
+    agentsList[1].status = 'Restarting';
+    agentsList[1].healthStatus = 'unhealthy';
   }
 };
-syncInitialState();
+syncInitialState(activeAgents);
 
 // --- Global Store State ---
 let globalState: DashboardState = {
-  agents: initialAgents,
+  agents: activeAgents,
   traces: initialTraces,
   systemStats: {
     cpuUsage: 34,
     memoryUsage: 58,
     activeTenants: 12,
-    totalAgents: initialAgents.length,
+    totalAgents: activeAgents.length,
     totalRequests: 10060
   },
   wsConnected: loadPersistedWS(),
-  adminControls: loadPersistedControls()
+  adminControls: loadPersistedControls(),
+  deploymentHistory: loadPersistedHistory()
 };
 
 type Listener = () => void;
@@ -303,23 +376,71 @@ export const mockDataStore = {
   },
 
   updateAgentStatus(agentId: string, status: DeploymentState) {
+    const nextAgents = globalState.agents.map((a) => {
+      if (a.id === agentId) {
+        const isRunning = status === 'Running';
+        const logs = [...a.logs, `[SYSTEM] ${new Date().toISOString()} - State changed to: ${status}`];
+        return {
+          ...a,
+          status,
+          uptime: isRunning ? 1 : 0,
+          healthStatus: isRunning ? 'healthy' as const : 'unhealthy' as const,
+          logs
+        };
+      }
+      return a;
+    });
+
     globalState = {
       ...globalState,
-      agents: globalState.agents.map((a) => {
-        if (a.id === agentId) {
-          const isRunning = status === 'Running';
-          const logs = [...a.logs, `[SYSTEM] ${new Date().toISOString()} - State changed to: ${status}`];
-          return {
-            ...a,
-            status,
-            uptime: isRunning ? 1 : 0,
-            healthStatus: isRunning ? 'healthy' : 'unhealthy',
-            logs
-          };
-        }
-        return a;
-      })
+      agents: nextAgents
     };
+
+    try {
+      const customOnly = nextAgents.filter(a => !initialAgents.find(ia => ia.id === a.id));
+      localStorage.setItem('r_cloud_custom_agents', JSON.stringify(customOnly));
+    } catch (e) {}
+
+    emit();
+  },
+
+  addNewAgent(agent: Agent) {
+    const existing = globalState.agents.find(a => a.id === agent.id);
+    let nextAgents = [...globalState.agents];
+    if (existing) {
+      nextAgents = nextAgents.map(a => a.id === agent.id ? agent : a);
+    } else {
+      nextAgents.push(agent);
+    }
+    
+    globalState = {
+      ...globalState,
+      agents: nextAgents,
+      systemStats: {
+        ...globalState.systemStats,
+        totalAgents: nextAgents.length
+      }
+    };
+    
+    try {
+      const customOnly = nextAgents.filter(a => !initialAgents.find(ia => ia.id === a.id));
+      localStorage.setItem('r_cloud_custom_agents', JSON.stringify(customOnly));
+    } catch (e) {}
+    
+    emit();
+  },
+
+  addDeploymentHistory(item: DeploymentHistoryItem) {
+    const nextHistory = [item, ...globalState.deploymentHistory];
+    globalState = {
+      ...globalState,
+      deploymentHistory: nextHistory
+    };
+    
+    try {
+      localStorage.setItem('r_cloud_deployment_history', JSON.stringify(nextHistory));
+    } catch (e) {}
+    
     emit();
   },
 

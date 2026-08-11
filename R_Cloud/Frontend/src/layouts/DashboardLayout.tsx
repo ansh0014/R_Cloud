@@ -16,7 +16,8 @@ import {
   ChevronDown,
   Menu,
   X,
-  RefreshCw
+  RefreshCw,
+  UploadCloud
 } from 'lucide-react';
 
 export default function DashboardLayout() {
@@ -35,6 +36,7 @@ export default function DashboardLayout() {
 
   const userNavItems = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Deploy Agent', path: '/dashboard/deploy', icon: UploadCloud },
     { label: 'Deployments', path: '/dashboard/deployments', icon: PlayCircle },
     { label: 'Agent Metrics', path: '/dashboard/agents', icon: Activity },
     { label: 'Traces', path: '/dashboard/traces', icon: Compass },
