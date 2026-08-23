@@ -12,6 +12,7 @@ import AgentMetrics from './pages/dashboard/AgentMetrics';
 import TracesPage from './pages/dashboard/TracesPage';
 import LogsPage from './pages/dashboard/LogsPage';
 import TokenUsagePage from './pages/dashboard/TokenUsagePage';
+import DeployPage from './pages/dashboard/DeployPage';
 import AdminOverview from './pages/admin/AdminOverview';
 import SystemControls from './pages/admin/SystemControls';
 
@@ -48,6 +49,7 @@ function App() {
             <Route path="traces" element={<TracesPage />} />
             <Route path="logs" element={<LogsPage />} />
             <Route path="tokens" element={<TokenUsagePage />} />
+            <Route path="deploy" element={<DeployPage />} />
           </Route>
 
           {/* Protected Admin Dashboard */}
