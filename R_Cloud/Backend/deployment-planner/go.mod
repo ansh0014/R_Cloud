@@ -1,6 +1,6 @@
 module github.com/r-cloud/deployment-planner
 
-go 1.22
+go 1.25.0
 
 require (
 	github.com/gorilla/mux v1.8.1

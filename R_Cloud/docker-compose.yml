@@ -1,0 +1,178 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # Infrastructure Services
+  # ----------------------------------------------------------------------------
+  nats:
+    image: nats:latest
+    container_name: rcloud-nats
+    ports:
+      - "4222:4222"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: rcloud-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # Core Platform Microservices
+  # context: . (repo root) so Docker can see ../../shared from go.mod replace
+  # dockerfile: path relative to that root context
+  # ----------------------------------------------------------------------------
+  auth-service:
+    build:
+      context: .
+      dockerfile: Backend/Auth/Dockerfile
+    container_name: rcloud-auth-service
+    env_file:
+      - ./Backend/Auth/.env
+    environment:
+      API_GATEWAY_URL: "http://api-gateway:8080"
+      FRONTEND_URL: "http://localhost:5173"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  project-service:
+    build:
+      context: .
+      dockerfile: Backend/project-service/Dockerfile
+    container_name: rcloud-project-service
+    env_file:
+      - ./Backend/project-service/.env
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  deployment-service:
+    build:
+      context: .
+      dockerfile: Backend/deployment-service/Dockerfile
+    container_name: rcloud-deployment-service
+    env_file:
+      - ./Backend/deployment-service/.env
+    environment:
+      NATS_URL: "nats://nats:4222"
+      RUNTIME_SERVICE_ADDR: "runtime-service:50051"
+      VALIDATION_SERVICE_URL: "http://validation-service:8086"
+      PLANNER_SERVICE_URL: "http://deployment-planner:8085"
+    ports:
+      - "8083:8083"
+    depends_on:
+      - nats
+      - runtime-service
+      - validation-service
+    restart: unless-stopped
+
+  deployment-planner:
+    build:
+      context: .
+      dockerfile: Backend/deployment-planner/Dockerfile
+    container_name: rcloud-deployment-planner
+    env_file:
+      - ./Backend/deployment-planner/.env
+    ports:
+      - "8085:8085"
+    restart: unless-stopped
+
+  validation-service:
+    build:
+      context: .
+      dockerfile: Backend/validation-service/Dockerfile
+    container_name: rcloud-validation-service
+    env_file:
+      - ./Backend/validation-service/.env
+    ports:
+      - "8086:8086"
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Backend/api-gateway/Dockerfile
+    container_name: rcloud-api-gateway
+    env_file:
+      - ./Backend/api-gateway/.env
+    environment:
+      AUTH_SERVICE_URL: "http://auth-service:8081"
+      PROJECT_SERVICE_URL: "http://project-service:8082"
+      DEPLOYMENT_SERVICE_URL: "http://deployment-service:8083"
+      RUNTIME_SERVICE_URL: "http://runtime-service:8084"
+      AGENTOPS_SERVICE_URL: "http://deployment-planner:8085"
+      VALIDATION_SERVICE_URL: "http://validation-service:8086"
+      AI_VALIDATION_URL: "http://ai-validation-agent:8087"
+      NATS_URL: "nats://nats:4222"
+      FRONTEND_URL: "http://localhost:5173"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - project-service
+      - deployment-service
+      - runtime-service
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # Runtime Service (Node.js) — no shared Go module, keep own context
+  # ----------------------------------------------------------------------------
+  runtime-service:
+    build:
+      context: .
+      dockerfile: Backend/runtime-service/Dockerfile
+    container_name: rcloud-runtime-service
+    env_file:
+      - ./Backend/runtime-service/.env
+    environment:
+      NATS_URL: "nats://nats:4222"
+    ports:
+      - "8084:8084"
+      - "50051:50051"
+    depends_on:
+      - nats
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # AI Validation Intelligence Agent (Gemini Enabled)
+  # ----------------------------------------------------------------------------
+  ai-validation-agent:
+    build:
+      context: ../Ai-Agent/ai-validation-agent
+      dockerfile: Dockerfile
+    container_name: rcloud-ai-validation-agent
+    env_file:
+      - ../Ai-Agent/ai-validation-agent/.env
+    ports:
+      - "8087:8087"
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # Frontend Dashboard
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: rcloud-frontend
+    env_file:
+      - ./Frontend/.env
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

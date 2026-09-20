@@ -2,18 +2,23 @@
 # SECRETS — NEVER COMMIT THESE
 # ============================================================
 .env
-.env.local
-.env.*.local
+.env.*
+*.env
 *.pem
 *.key
 secrets/
+**/firebase-credentials.json
 
 # ============================================================
-# NODE / TYPESCRIPT (Ai-Agent runtime-engine / runtime-service)
+# NODE / TYPESCRIPT (Frontend, runtime-service, etc.)
 # ============================================================
 node_modules/
+**/node_modules/
+**/node_modules
 dist/
+**/dist/
 build/
+**/build/
 .next/
 out/
 *.tsbuildinfo
@@ -23,18 +28,21 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
 .cache/
-coverage/
+**/coverage/
 
 # ============================================================
-# PYTHON (Ai-Agent runtime-engine if Python)
+# PYTHON (ai-validation-agent, etc.)
 # ============================================================
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.pyc
 *.pyo
 .venv/
+**/.venv/
 venv/
+**/venv/
 env/
 .Python
 *.egg-info/
@@ -55,6 +63,14 @@ env/
 *.out
 go.sum.bak
 vendor/
+
+# ============================================================
+# CLONES & TEMP DIRECTORIES
+# ============================================================
+tmp/
+**/tmp/
+clones/
+**/clones/
 
 # ============================================================
 # DATABASE

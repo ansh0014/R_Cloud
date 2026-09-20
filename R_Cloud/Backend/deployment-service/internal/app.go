@@ -88,6 +88,25 @@ func connectDB(databaseURL string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to reach database: %w", err)
 	}
 
+	createDeploymentsTableQuery := `
+	CREATE TABLE IF NOT EXISTS deployments (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		project_id TEXT NOT NULL,
+		user_id TEXT NOT NULL,
+		branch TEXT NOT NULL,
+		commit_hash TEXT,
+		version TEXT,
+		mode TEXT,
+		status TEXT NOT NULL,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+		completed_at TIMESTAMPTZ
+	);
+	CREATE INDEX IF NOT EXISTS idx_deployments_project_id ON deployments(project_id);
+	`
+	if _, err := db.Exec(createDeploymentsTableQuery); err != nil {
+		return nil, fmt.Errorf("failed to run deployments table migration: %w", err)
+	}
+
 	return db, nil
 }
 

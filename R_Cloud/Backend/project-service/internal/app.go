@@ -53,6 +53,25 @@ func connectDB(databaseURL string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to reach database: %w", err)
 	}
 
+	createProjectsTableQuery := `
+	CREATE TABLE IF NOT EXISTS projects (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		user_id TEXT NOT NULL,
+		name TEXT NOT NULL,
+		description TEXT,
+		github_repo_url TEXT,
+		github_repo_name TEXT,
+		github_owner TEXT,
+		default_branch TEXT DEFAULT 'main',
+		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+		updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+	);
+	CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
+	`
+	if _, err := db.Exec(createProjectsTableQuery); err != nil {
+		return nil, fmt.Errorf("failed to run projects table migration: %w", err)
+	}
+
 	return db, nil
 }
 
