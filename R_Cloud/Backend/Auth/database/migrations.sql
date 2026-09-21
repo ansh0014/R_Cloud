@@ -1,3 +1,4 @@
+-- Clean Auth Service Database Migration (PostgreSQL)
 
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -10,27 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Upgrade existing deployments that used Firebase/Auth0 terminology.
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'users' AND column_name = 'auth0_id'
-    ) AND NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'users' AND column_name = 'google_subject'
-    ) THEN
-        ALTER TABLE users RENAME COLUMN auth0_id TO google_subject;
-    END IF;
-END $$;
-
--- Create index on Google subject for faster lookups
 CREATE INDEX IF NOT EXISTS idx_users_google_subject ON users(google_subject);
-
--- Create index on email for faster lookups
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
--- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -39,7 +22,6 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Trigger to automatically update updated_at
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

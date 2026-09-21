@@ -85,18 +85,25 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if user == nil {
+			role := "user"
+			if h.config.AdminEmail != "" && email == h.config.AdminEmail {
+				role = "admin"
+			}
 			user = &models.User{
 				GoogleSubject: googleSubject,
 				Email:         email,
 				Name:          name,
 				Picture:       picture,
-				Role:          "user",
+				Role:          role,
 			}
 			if err := h.userRepo.Create(user); err != nil {
 				http.Error(w, "Failed to create user", http.StatusInternalServerError)
 				return
 			}
 		} else {
+			if h.config.AdminEmail != "" && email == h.config.AdminEmail {
+				user.Role = "admin"
+			}
 			user.GoogleSubject = googleSubject
 			user.Name = name
 			user.Picture = picture
@@ -106,6 +113,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
+		if h.config.AdminEmail != "" && email == h.config.AdminEmail {
+			user.Role = "admin"
+		}
 		user.Email = email
 		user.Name = name
 		user.Picture = picture

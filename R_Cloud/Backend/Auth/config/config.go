@@ -9,6 +9,7 @@ import (
 )
 
 type Config struct {
+	AdminEmail string
 	Server     ServerConfig
 	GoogleAuth GoogleAuthConfig
 	Database   DatabaseConfig
@@ -45,6 +46,7 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	config := &Config{
+		AdminEmail: os.Getenv("ADMIN_EMAIL"),
 		Server: ServerConfig{
 			Port:        os.Getenv("PORT"),
 			FrontendURL: os.Getenv("API_GATEWAY_URL"),

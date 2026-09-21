@@ -17,6 +17,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+//go:embed database/migrations.sql
 var migrationsSQL string
 
 func main() {
