@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useMockDataStream, mockDataStore } from '../hooks/useMockDataStream';
+import { useWebSocket } from '../hooks/useWebSocket';
 import {
   LayoutDashboard,
   PlayCircle,
@@ -22,17 +22,13 @@ import {
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
-  const { wsConnected, agents } = useMockDataStream();
+  const { isConnected } = useWebSocket();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const isAdmin = user?.role === 'admin';
-
-  // Extract unique project list for filter dropdown
-  const projects = Array.from(new Set(agents.map((a) => a.project)));
-  const [selectedProject, setSelectedProject] = useState<string>('All Projects');
 
   const userNavItems = [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
@@ -46,15 +42,16 @@ export default function DashboardLayout() {
 
   const adminNavItems = [
     { label: 'System Overview', path: '/admin', icon: LayoutDashboard },
-    { label: 'Simulation Controls', path: '/admin/controls', icon: Sliders }
+    { label: 'System Controls', path: '/admin/controls', icon: Sliders }
   ];
 
   const navItems = isAdmin ? adminNavItems : userNavItems;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
+
 
   return (
     <div className="min-h-screen bg-[#07050f] text-slate-100 flex flex-col font-manrope">
@@ -91,42 +88,24 @@ export default function DashboardLayout() {
 
         {/* --- Top Actions --- */}
         <div className="flex items-center gap-4">
-          {/* Mock Project Selector (only for User Dashboard) */}
-          {!isAdmin && (
-            <div className="relative hidden md:block">
-              <select
-                value={selectedProject}
-                onChange={(e) => setSelectedProject(e.target.value)}
-                className="bg-[#131126] border border-[#2b2344] text-xs text-slate-200 rounded-lg px-3 py-1.5 pr-8 focus:outline-none focus:border-primary appearance-none cursor-pointer"
-              >
-                <option value="All Projects">All Projects</option>
-                {projects.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
-            </div>
-          )}
-
-          {/* Real-time WS Status Indicator with Toggle */}
-          <button
-            onClick={() => mockDataStore.toggleWS()}
-            className="flex items-center gap-2 bg-[#131126] hover:bg-[#1a1733] border border-[#2b2344] px-3 py-1.5 rounded-lg text-xs transition-all"
-            title="Click to toggle simulated live WebSocket stream"
+          {/* Real-time WebSocket connection status indicator */}
+          <div
+            className="flex items-center gap-2 bg-[#131126] border border-[#2b2344] px-3 py-1.5 rounded-lg text-xs"
+            title={isConnected ? 'Live WebSocket connection active' : 'WebSocket disconnected — reconnecting…'}
           >
             <span className="relative flex h-2 w-2">
-              {wsConnected && (
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              {isConnected && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               )}
               <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                wsConnected ? 'bg-emerald-500' : 'bg-rose-500'
-              }`}></span>
+                isConnected ? 'bg-emerald-500' : 'bg-rose-500'
+              }`} />
             </span>
             <span className="text-slate-300 font-medium hidden sm:inline">
-              {wsConnected ? 'Live Connection' : 'Stream Paused'}
+              {isConnected ? 'Live' : 'Reconnecting…'}
             </span>
-            <RefreshCw className={`size-3 text-slate-400 ml-1 ${wsConnected ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }} />
-          </button>
+            <RefreshCw className={`size-3 text-slate-400 ml-1 ${isConnected ? 'animate-spin' : ''}`} style={{ animationDuration: '6s' }} />
+          </div>
 
           {/* User Profile Menu */}
           <div className="relative">
@@ -134,9 +113,17 @@ export default function DashboardLayout() {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2 hover:bg-[#131126] px-2.5 py-1.5 rounded-lg transition-colors focus:outline-none"
             >
-              <div className="size-7 rounded-full bg-gradient-to-tr from-[#7b39fc] to-[#a484d7] flex items-center justify-center text-white font-bold text-xs">
-                {user?.name.charAt(0) || 'U'}
-              </div>
+              {user?.picture ? (
+                <img
+                  src={user.picture}
+                  alt={user.name}
+                  className="size-7 rounded-full object-cover"
+                />
+              ) : (
+                <div className="size-7 rounded-full bg-gradient-to-tr from-[#7b39fc] to-[#a484d7] flex items-center justify-center text-white font-bold text-xs">
+                  {user?.name?.charAt(0) || 'U'}
+                </div>
+              )}
               <span className="text-xs text-slate-300 font-medium hidden md:inline">{user?.name}</span>
               <ChevronDown className="size-3.5 text-slate-400 hidden md:inline" />
             </button>
@@ -144,37 +131,13 @@ export default function DashboardLayout() {
             {profileOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} />
-                <div className="absolute right-0 mt-2 w-48 bg-[#0d0b17] border border-[#2b2344] rounded-xl shadow-xl z-20 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="px-4 py-2 border-b border-[#2b2344]/60">
-                    <p className="text-xs text-slate-400">Signed in as</p>
-                    <p className="text-xs font-semibold text-white truncate mt-0.5">{user?.email}</p>
-                  </div>
-                  
-                  {/* Quick role-switch link to aid reviewer verification */}
-                  <div className="px-2 py-1.5 border-b border-[#2b2344]/60 bg-primary/5">
-                    <p className="text-[10px] text-primary font-bold px-2 uppercase tracking-wide">Reviewer Preview</p>
-                    <Link
-                      to={isAdmin ? '/dashboard' : '/admin'}
-                      onClick={() => {
-                        setProfileOpen(false);
-                        // Swap role locally in auth store
-                        if (user) {
-                          const newRole = isAdmin ? 'user' : 'admin';
-                          const updated = { 
-                            ...user, 
-                            role: newRole,
-                            name: newRole === 'admin' ? 'System Admin' : 'Agent Developer',
-                            email: newRole === 'admin' ? 'admin@rcloud.com' : 'user@rcloud.com'
-                          };
-                          localStorage.setItem('r_cloud_user', JSON.stringify(updated));
-                          window.location.reload(); // Force reload to re-runProtectedRoutes
-                        }
-                      }}
-                      className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-slate-300 hover:text-white rounded-md hover:bg-[#1a1733] transition-colors"
-                    >
-                      <Shield className="size-3" />
-                      Switch to {isAdmin ? 'User view' : 'Admin view'}
-                    </Link>
+                <div className="absolute right-0 mt-2 w-52 bg-[#0d0b17] border border-[#2b2344] rounded-xl shadow-xl z-20 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="px-4 py-3 border-b border-[#2b2344]/60">
+                    {user?.picture && (
+                      <img src={user.picture} alt={user.name} className="size-8 rounded-full mb-2" />
+                    )}
+                    <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5">{user?.email}</p>
                   </div>
 
                   <button
@@ -288,22 +251,6 @@ export default function DashboardLayout() {
             </div>
 
             <div className="border-t border-[#2b2344]/60 pt-4 flex flex-col gap-3">
-              {!isAdmin && (
-                <div className="relative">
-                  <select
-                    value={selectedProject}
-                    onChange={(e) => setSelectedProject(e.target.value)}
-                    className="w-full bg-[#131126] border border-[#2b2344] text-xs text-slate-200 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:border-primary appearance-none cursor-pointer"
-                  >
-                    <option value="All Projects">All Projects</option>
-                    {projects.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
-                </div>
-              )}
-              
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-sm font-medium transition-all"

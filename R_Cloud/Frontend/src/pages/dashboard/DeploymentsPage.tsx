@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { listDeployments, listProjects, type Deployment } from '../../lib/api';
 import {
   BarChart,
   Bar,
@@ -15,142 +15,77 @@ import {
   CheckCircle,
   XCircle,
   GitBranch,
-  Search
+  Search,
+  Loader2,
+  FolderGit2
 } from 'lucide-react';
 
-interface OutletContextType {
-  selectedProject: string;
-}
-
-interface HistoricalDeployment {
-  id: string;
-  agentName: string;
-  project: string;
-  branch: string;
-  durationMs: number;
-  status: 'Success' | 'Failed';
-  timestamp: string;
-  commitMsg: string;
-}
-
-const mockHistory: HistoricalDeployment[] = [
-  {
-    id: 'dep-109',
-    agentName: 'Customer-Support-Bot',
-    project: 'E-Commerce Platform',
-    branch: 'main',
-    durationMs: 5120,
-    status: 'Success',
-    timestamp: '2026-07-08T09:42:00Z',
-    commitMsg: 'feat: add pricing query context parser'
-  },
-  {
-    id: 'dep-108',
-    agentName: 'DevOps-Code-Reviewer',
-    project: 'CI/CD Toolchain',
-    branch: 'main',
-    durationMs: 8240,
-    status: 'Success',
-    timestamp: '2026-07-08T08:12:00Z',
-    commitMsg: 'refactor: use localized external store check-in'
-  },
-  {
-    id: 'dep-107',
-    agentName: 'Security-Scanner',
-    project: 'Infra Auditing',
-    branch: 'main',
-    durationMs: 9140,
-    status: 'Failed',
-    timestamp: '2026-07-08T07:22:00Z',
-    commitMsg: 'fix: scanner port binding conflicts'
-  },
-  {
-    id: 'dep-106',
-    agentName: 'Customer-Support-Bot',
-    project: 'E-Commerce Platform',
-    branch: 'dev',
-    durationMs: 4680,
-    status: 'Success',
-    timestamp: '2026-07-07T18:30:00Z',
-    commitMsg: 'test: mock integrations parameters'
-  },
-  {
-    id: 'dep-105',
-    agentName: 'Sales-Outreach-Agent',
-    project: 'E-Commerce Platform',
-    branch: 'release-1.1',
-    durationMs: 6100,
-    status: 'Success',
-    timestamp: '2026-07-07T14:15:00Z',
-    commitMsg: 'chore: bump node base image tag version'
-  },
-  {
-    id: 'dep-104',
-    agentName: 'Security-Scanner',
-    project: 'Infra Auditing',
-    branch: 'patch-12',
-    durationMs: 4120,
-    status: 'Success',
-    timestamp: '2026-07-06T11:00:00Z',
-    commitMsg: 'security: update base packages check'
-  },
-  {
-    id: 'dep-103',
-    agentName: 'DevOps-Code-Reviewer',
-    project: 'CI/CD Toolchain',
-    branch: 'feature/diff-view',
-    durationMs: 12450,
-    status: 'Success',
-    timestamp: '2026-07-05T15:45:00Z',
-    commitMsg: 'feat: add git diff formatter support'
-  },
-  {
-    id: 'dep-102',
-    agentName: 'Customer-Support-Bot',
-    project: 'E-Commerce Platform',
-    branch: 'main',
-    durationMs: 5800,
-    status: 'Success',
-    timestamp: '2026-07-05T09:20:00Z',
-    commitMsg: 'feat: integrate direct vector search callbacks'
-  },
-  {
-    id: 'dep-101',
-    agentName: 'Sales-Outreach-Agent',
-    project: 'E-Commerce Platform',
-    branch: 'main',
-    durationMs: 7850,
-    status: 'Failed',
-    timestamp: '2026-07-04T16:10:00Z',
-    commitMsg: 'fix: fix dynamic scheduler interval locks'
-  }
-];
-
 export default function DeploymentsPage() {
-  const { selectedProject } = useOutletContext<OutletContextType>();
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRow, setSelectedRow] = useState<HistoricalDeployment | null>(null);
+  const [selectedRow, setSelectedRow] = useState<Deployment | null>(null);
 
-  // Filter based on layout project selector + search term
-  const filteredHistory = mockHistory.filter((d) => {
-    const matchesProject = selectedProject === 'All Projects' || d.project === selectedProject;
-    const matchesSearch = d.agentName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         d.commitMsg.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesProject && matchesSearch;
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDeploymentsData() {
+      setIsLoading(true);
+      try {
+        const projectsList = await listProjects();
+        if (projectsList.length === 0) {
+          if (isMounted) {
+            setDeployments([]);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        // Fetch deployments for all projects
+        const allDeeps: Deployment[] = [];
+        for (const proj of projectsList) {
+          const proDeeps = await listDeployments(proj.id);
+          allDeeps.push(...proDeeps);
+        }
+
+        if (isMounted) {
+          setDeployments(allDeeps);
+        }
+      } catch (err) {
+        console.error('Failed to load deployments:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadDeploymentsData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Filter based on search term
+  const filteredHistory = deployments.filter((d) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      (d.branch || '').toLowerCase().includes(term) ||
+      (d.commitHash || '').toLowerCase().includes(term) ||
+      (d.version || '').toLowerCase().includes(term) ||
+      (d.id || '').toLowerCase().includes(term)
+    );
   });
 
   // Analytics helper metrics
   const totalBuilds = filteredHistory.length;
-  const successfulBuilds = filteredHistory.filter(d => d.status === 'Success').length;
-  const failedBuilds = filteredHistory.filter(d => d.status === 'Failed').length;
-  
-  const avgDuration = totalBuilds > 0
-    ? (filteredHistory.reduce((sum, d) => sum + d.durationMs, 0) / totalBuilds / 1000).toFixed(2)
-    : '0.00';
+  const successfulBuilds = filteredHistory.filter(d => d.status === 'COMPLETED' || d.status === 'RUNNING').length;
+  const failedBuilds = filteredHistory.filter(d => d.status === 'FAILED').length;
 
-  // Format historical date
-  const formatDate = (isoString: string) => {
+  // Format date
+  const formatDate = (isoString?: string) => {
+    if (!isoString) return '—';
     const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -163,9 +98,8 @@ export default function DeploymentsPage() {
   const chartData = [...filteredHistory]
     .reverse()
     .map(d => ({
-      name: d.id,
-      agent: d.agentName,
-      seconds: parseFloat((d.durationMs / 1000).toFixed(1)),
+      name: d.id.slice(0, 8),
+      version: d.version || 'v1.0.0',
       status: d.status
     }));
 
@@ -175,17 +109,17 @@ export default function DeploymentsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-white font-manrope">Deployment History & Analytics</h1>
         <p className="text-sm text-slate-400 mt-1">
-          Review detailed logs of container builds, track average deployment speeds, and inspect previous configurations.
+          Review live container build audits, track deployment statuses, and inspect runtime configurations.
         </p>
       </div>
 
       {/* Analytics Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Builds', value: totalBuilds, subtext: 'Triggered total build runs' },
+          { label: 'Total Builds', value: totalBuilds, subtext: 'Triggered deployment runs' },
           { label: 'Successful Builds', value: successfulBuilds, subtext: `${totalBuilds > 0 ? ((successfulBuilds/totalBuilds)*100).toFixed(0) : 100}% Pass rate`, color: 'text-emerald-400' },
           { label: 'Failed Builds', value: failedBuilds, subtext: `${totalBuilds > 0 ? ((failedBuilds/totalBuilds)*100).toFixed(0) : 0}% Fail rate`, color: 'text-rose-400' },
-          { label: 'Avg Build Speed', value: `${avgDuration}s`, subtext: 'Build & lifecycle duration' }
+          { label: 'Active Runtimes', value: successfulBuilds, subtext: 'Running container instances' }
         ].map((item, idx) => (
           <div key={idx} className="bg-[#0d0b17] border border-[#2b2344]/40 rounded-xl p-4">
             <p className="text-xs text-slate-400 font-medium">{item.label}</p>
@@ -198,12 +132,16 @@ export default function DeploymentsPage() {
       {/* Duration Graph Panel */}
       <div className="bg-[#0d0b17] border border-[#2b2344]/40 rounded-xl p-5 space-y-4">
         <div>
-          <h2 className="text-base font-bold text-white font-manrope">Build Duration Analytics</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Deployment compilation speed (seconds) per run</p>
+          <h2 className="text-base font-bold text-white font-manrope">Build Run Activity</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Deployment statuses per run</p>
         </div>
 
-        <div className="h-64 w-full bg-[#05030a]/40 border border-[#2b2344]/20 rounded-lg p-2">
-          {chartData.length > 0 ? (
+        <div className="h-48 w-full bg-[#05030a]/40 border border-[#2b2344]/20 rounded-lg p-2">
+          {isLoading ? (
+            <div className="h-full flex items-center justify-center text-xs text-slate-400 gap-2">
+              <Loader2 className="size-4 animate-spin text-primary" /> Loading deployment analytics...
+            </div>
+          ) : chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1d1933" />
@@ -213,19 +151,20 @@ export default function DeploymentsPage() {
                   contentStyle={{ backgroundColor: '#0d0b17', borderColor: '#2b2344', color: '#f8fafc', borderRadius: '8px' }}
                   cursor={{ fill: 'rgba(123, 57, 252, 0.05)' }}
                 />
-                <Bar dataKey="seconds" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="name" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={entry.status === 'Success' ? '#7b39fc' : '#f43f5e'}
+                      fill={['COMPLETED', 'RUNNING'].includes(entry.status) ? '#7b39fc' : '#f43f5e'}
                     />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-xs text-slate-500">
-              No historical data for graph rendering.
+            <div className="h-full flex flex-col items-center justify-center text-xs text-slate-500 gap-1">
+              <FolderGit2 className="size-6 text-slate-600 mb-1" />
+              <span>No historical deployments found. Deploy your first agent project to see analytics!</span>
             </div>
           )}
         </div>
@@ -241,7 +180,7 @@ export default function DeploymentsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
             <input
               type="text"
-              placeholder="Search agent or commit..."
+              placeholder="Search branch, hash, or version..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-[#131126] border border-[#2b2344] text-xs text-slate-200 rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-primary"
@@ -255,49 +194,62 @@ export default function DeploymentsPage() {
             <thead>
               <tr className="border-b border-[#2b2344]/60 text-slate-400 font-semibold">
                 <th className="py-3 px-4">Deployment ID</th>
-                <th className="py-3 px-4">Agent Name</th>
                 <th className="py-3 px-4">Branch</th>
-                <th className="py-3 px-4">Commit Message</th>
-                <th className="py-3 px-4">Triggered At</th>
-                <th className="py-3 px-4">Duration</th>
+                <th className="py-3 px-4">Commit Hash</th>
+                <th className="py-3 px-4">Mode</th>
+                <th className="py-3 px-4">Created At</th>
                 <th className="py-3 px-4">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#2b2344]/30 text-slate-300">
-              {filteredHistory.map((row) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-500">
+                    <Loader2 className="size-5 animate-spin mx-auto mb-2 text-primary" />
+                    Fetching real deployments from API Gateway...
+                  </td>
+                </tr>
+              ) : filteredHistory.map((row) => (
                 <tr
                   key={row.id}
                   onClick={() => setSelectedRow(row)}
                   className="hover:bg-[#131126]/40 cursor-pointer transition-colors"
                 >
-                  <td className="py-3 px-4 font-mono text-[11px] font-semibold text-primary">{row.id}</td>
-                  <td className="py-3 px-4 font-medium text-white">{row.agentName}</td>
+                  <td className="py-3 px-4 font-mono text-[11px] font-semibold text-primary">{row.id.slice(0, 18)}...</td>
                   <td className="py-3 px-4">
                     <span className="inline-flex items-center gap-1 bg-[#131126] px-2 py-0.5 rounded text-[10px] text-slate-400 border border-[#2b2344]/30">
                       <GitBranch className="size-3" />
-                      {row.branch}
+                      {row.branch || 'main'}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-400 font-medium truncate max-w-[180px]">{row.commitMsg}</td>
-                  <td className="py-3 px-4 text-slate-400">{formatDate(row.timestamp)}</td>
-                  <td className="py-3 px-4 font-medium">{(row.durationMs / 1000).toFixed(2)}s</td>
+                  <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">{row.commitHash || 'head'}</td>
+                  <td className="py-3 px-4 text-slate-300 capitalize">{row.mode || 'monolith'}</td>
+                  <td className="py-3 px-4 text-slate-400">{formatDate(row.createdAt)}</td>
                   <td className="py-3 px-4">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                      row.status === 'Success'
+                      ['COMPLETED', 'RUNNING'].includes(row.status)
                         ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        : row.status === 'FAILED'
+                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse'
                     }`}>
-                      {row.status === 'Success' ? <CheckCircle className="size-3" /> : <XCircle className="size-3" />}
+                      {['COMPLETED', 'RUNNING'].includes(row.status) ? (
+                        <CheckCircle className="size-3" />
+                      ) : row.status === 'FAILED' ? (
+                        <XCircle className="size-3" />
+                      ) : (
+                        <Clock className="size-3" />
+                      )}
                       {row.status}
                     </span>
                   </td>
                 </tr>
               ))}
 
-              {filteredHistory.length === 0 && (
+              {!isLoading && filteredHistory.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500">
-                    No historical builds found.
+                  <td colSpan={6} className="py-8 text-center text-slate-500">
+                    No deployments found. Trigger your first deployment from the "Deploy Agent" page.
                   </td>
                 </tr>
               )}
@@ -330,18 +282,19 @@ export default function DeploymentsPage() {
                 <div className="bg-[#131126] border border-[#2b2344]/30 rounded-xl p-3">
                   <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Status</span>
                   <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold mt-1 ${
-                    selectedRow.status === 'Success'
+                    ['COMPLETED', 'RUNNING'].includes(selectedRow.status)
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                      : selectedRow.status === 'FAILED'
+                      ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                   }`}>
                     {selectedRow.status}
                   </span>
                 </div>
                 <div className="bg-[#131126] border border-[#2b2344]/30 rounded-xl p-3">
-                  <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Elapsed Time</span>
-                  <span className="text-sm font-bold text-white mt-1 block flex items-center gap-1">
-                    <Clock className="size-3.5 text-primary" />
-                    {(selectedRow.durationMs / 1000).toFixed(2)} seconds
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Project ID</span>
+                  <span className="text-xs font-mono font-bold text-white mt-1 block truncate">
+                    {selectedRow.projectId}
                   </span>
                 </div>
               </div>
@@ -349,49 +302,20 @@ export default function DeploymentsPage() {
               {/* Build Meta list */}
               <div className="space-y-3.5 text-xs">
                 <div className="flex justify-between border-b border-[#2b2344]/30 pb-2">
-                  <span className="text-slate-400">Agent Container</span>
-                  <span className="text-white font-medium">{selectedRow.agentName}</span>
-                </div>
-                <div className="flex justify-between border-b border-[#2b2344]/30 pb-2">
                   <span className="text-slate-400">Git Branch</span>
-                  <span className="text-white font-mono">{selectedRow.branch}</span>
+                  <span className="text-white font-mono">{selectedRow.branch || 'main'}</span>
                 </div>
                 <div className="flex justify-between border-b border-[#2b2344]/30 pb-2">
-                  <span className="text-slate-400">Triggered at</span>
-                  <span className="text-white">{formatDate(selectedRow.timestamp)}</span>
+                  <span className="text-slate-400">Commit Hash</span>
+                  <span className="text-white font-mono">{selectedRow.commitHash || 'head'}</span>
                 </div>
-                <div className="flex flex-col gap-1 pb-2">
-                  <span className="text-slate-400">Commit Message</span>
-                  <span className="text-slate-200 bg-[#131126] border border-[#2b2344]/40 rounded-lg p-2.5 mt-1 font-mono text-[11px] leading-relaxed">
-                    {selectedRow.commitMsg}
-                  </span>
+                <div className="flex justify-between border-b border-[#2b2344]/30 pb-2">
+                  <span className="text-slate-400">Created at</span>
+                  <span className="text-white">{formatDate(selectedRow.createdAt)}</span>
                 </div>
-              </div>
-
-              {/* Process Stages details */}
-              <div className="space-y-4">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Build Stages Lifecycle</h3>
-                <div className="relative border-l border-[#2b2344] ml-2.5 pl-5 space-y-4 text-[11px] text-slate-400">
-                  {[
-                    { title: 'Base Image Pull', dur: '0.8s', desc: 'Pulling python-node base image layers from registry.' },
-                    { title: 'Variable Inject & Validation', dur: '0.5s', desc: 'Loaded project environmental keys.' },
-                    { title: 'Vite Compilation', dur: '2.4s', desc: 'Compiled bundle and assets.' },
-                    { title: 'Railway Instance Provision', dur: '1.2s', desc: 'Spun runtime container and bound port.' },
-                    { title: 'Health Check Probes', dur: '0.4s', desc: selectedRow.status === 'Success' ? 'Endpoint response check passed.' : 'Endpoint response check timed out.' }
-                  ].map((stage, sIdx) => (
-                    <div key={sIdx} className="relative">
-                      <div className={`absolute -left-[27px] top-0.5 size-3.5 rounded-full border border-[#2b2344] flex items-center justify-center ${
-                        selectedRow.status === 'Failed' && sIdx === 4
-                          ? 'bg-rose-500 border-rose-500'
-                          : 'bg-primary border-primary'
-                      }`} />
-                      <div className="flex justify-between font-semibold text-slate-200">
-                        <span>{stage.title}</span>
-                        <span className="text-slate-500 font-mono font-medium">{stage.dur}</span>
-                      </div>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{stage.desc}</p>
-                    </div>
-                  ))}
+                <div className="flex justify-between border-b border-[#2b2344]/30 pb-2">
+                  <span className="text-slate-400">Completed at</span>
+                  <span className="text-white">{formatDate(selectedRow.completedAt)}</span>
                 </div>
               </div>
             </div>

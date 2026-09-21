@@ -73,6 +73,7 @@ func (s *DeploymentService) Deploy(ctx context.Context, req DeployRequest) (*mod
 		ProjectID: req.ProjectID,
 		UserID:    req.UserID,
 		Branch:    req.Branch,
+		Mode:      "monolith",
 		Status:    "VALIDATING",
 		CreatedAt: time.Now().UTC(),
 	}

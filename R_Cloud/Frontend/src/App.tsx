@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css';
 import Navbar from './components/Navbar';
 import HeroSection from './components/HeroSection';
@@ -18,8 +19,9 @@ import SystemControls from './pages/admin/SystemControls';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ''}>
+      <AuthProvider>
+        <Router>
         <Routes>
           {/* Public routes */}
           <Route
@@ -65,8 +67,9 @@ function App() {
             <Route path="controls" element={<SystemControls />} />
           </Route>
         </Routes>
-      </Router>
-    </AuthProvider>
+        </Router>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

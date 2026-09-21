@@ -1,10 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export type UserRole = 'user' | 'admin';
 
+// Matches the JSON returned by Auth Service POST /api/v1/auth/login
 export interface User {
+  id: number;
+  google_subject: string;
   email: string;
   name: string;
+  picture: string;
   role: UserRole;
 }
 
@@ -12,59 +16,77 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, name?: string) => Promise<boolean>;
-  logout: () => void;
+  loginWithGoogle: (googleIdToken: string) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const AUTH_URL = import.meta.env.VITE_AUTH_URL || 'http://localhost:8081';
+const SESSION_KEY = 'r_cloud_user';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // On mount, check if session still valid by hitting /profile
   useEffect(() => {
-    const storedUser = localStorage.getItem('r_cloud_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem('r_cloud_user');
+    const checkSession = async () => {
+      const cached = localStorage.getItem(SESSION_KEY);
+      if (cached) {
+        try {
+          setUser(JSON.parse(cached));
+        } catch (_) {
+          localStorage.removeItem(SESSION_KEY);
+        }
       }
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+    checkSession();
   }, []);
 
-  const login = async (email: string, name?: string): Promise<boolean> => {
+  /**
+   * Called after Google Sign-In returns a credential (ID token).
+   * Sends it to our Auth Service which validates, creates session, returns User.
+   */
+  const loginWithGoogle = useCallback(async (googleIdToken: string): Promise<boolean> => {
     setIsLoading(true);
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      const response = await fetch(`${AUTH_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // send/receive session cookie
+        body: JSON.stringify({ idToken: googleIdToken }),
+      });
 
-    const normalizedEmail = email.toLowerCase().trim();
-    let role: UserRole = 'user';
-    let displayName = name || normalizedEmail.split('@')[0];
+      if (!response.ok) {
+        console.error('Auth service login failed:', response.status, await response.text());
+        setIsLoading(false);
+        return false;
+      }
 
-    // Role assignment based on email contents
-    if (normalizedEmail.includes('admin')) {
-      role = 'admin';
-      displayName = name || 'System Admin';
+      const userData: User = await response.json();
+      setUser(userData);
+      localStorage.setItem(SESSION_KEY, JSON.stringify(userData));
+      setIsLoading(false);
+      return true;
+    } catch (err) {
+      console.error('Login error:', err);
+      setIsLoading(false);
+      return false;
     }
+  }, []);
 
-    const loggedInUser: User = {
-      email: normalizedEmail,
-      name: displayName.charAt(0).toUpperCase() + displayName.slice(1),
-      role,
-    };
-
-    setUser(loggedInUser);
-    localStorage.setItem('r_cloud_user', JSON.stringify(loggedInUser));
-    setIsLoading(false);
-    return true;
-  };
-
-  const logout = () => {
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${AUTH_URL}/api/v1/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (_) {}
     setUser(null);
-    localStorage.removeItem('r_cloud_user');
-  };
+    localStorage.removeItem(SESSION_KEY);
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -72,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user,
         isLoading,
-        login,
+        loginWithGoogle,
         logout,
       }}
     >
