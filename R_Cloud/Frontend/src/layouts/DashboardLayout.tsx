@@ -11,7 +11,6 @@ import {
   Coins,
   LogOut,
   Sparkles,
-  Shield,
   Sliders,
   ChevronDown,
   Menu,
@@ -195,8 +194,7 @@ export default function DashboardLayout() {
 
         {/* --- Content Shell --- */}
         <main className="flex-1 overflow-y-auto">
-          {/* Project filter context provider logic can be passed via Outlet context if needed */}
-          <Outlet context={{ selectedProject }} />
+          <Outlet />
         </main>
       </div>
 

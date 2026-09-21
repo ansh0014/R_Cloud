@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createProject, createDeployment, analyzeRepository } from '../../lib/api';
 import {
-  CheckCircle2,
   GitBranch,
   AlertCircle,
   Plus,
   Trash2,
   Play,
   X,
-  Globe,
   Loader2,
   Sparkles,
   ShieldCheck,
@@ -83,7 +81,7 @@ export default function DeployPage() {
         repository_structure: {
           files: ['main.py', 'ragent.yaml', 'requirements.txt', 'README.md'],
           ragent_yaml: 'version: 1',
-          'requirements.txt': 'fastapi\nuvicorn'
+          requirements_txt: 'fastapi\nuvicorn'
         }
       });
       setAiReport(report);
