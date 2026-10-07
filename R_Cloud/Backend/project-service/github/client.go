@@ -72,9 +72,9 @@ func (c *GitHubClient) ValidateRepository(repoURL string) (*RepositoryResponse, 
 	return &repoInfo, nil
 }
 
-// parseRepoURL extracts the owner and repository name from a GitHub URL.
+// ParseRepoURL extracts the owner and repository name from a GitHub URL.
 // Expected format: https://github.com/owner/repo
-func parseRepoURL(repoURL string) (owner string, repoName string, err error) {
+func ParseRepoURL(repoURL string) (owner string, repoName string, err error) {
 	cleaned := strings.TrimSuffix(repoURL, "/")
 	parts := strings.Split(cleaned, "/")
 
@@ -83,4 +83,8 @@ func parseRepoURL(repoURL string) (owner string, repoName string, err error) {
 	}
 
 	return parts[len(parts)-2], parts[len(parts)-1], nil
+}
+
+func parseRepoURL(repoURL string) (owner string, repoName string, err error) {
+	return ParseRepoURL(repoURL)
 }

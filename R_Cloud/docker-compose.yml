@@ -117,7 +117,7 @@ services:
       NATS_URL: "nats://nats:4222"
       FRONTEND_URL: "http://localhost:5173"
     ports:
-      - "8080:8080"
+      - "8000:8080"
     depends_on:
       - auth-service
       - project-service
@@ -165,6 +165,11 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_GATEWAY_URL: "http://localhost:8000"
+        VITE_WS_URL: "ws://localhost:8000/ws"
+        VITE_AUTH_URL: "http://localhost:8081"
+        VITE_GOOGLE_CLIENT_ID: "510549371372-n3f6bqooripebg2g1601q8c1he1ko8lo.apps.googleusercontent.com"
     container_name: rcloud-frontend
     env_file:
       - ./Frontend/.env

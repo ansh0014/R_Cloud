@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/r-cloud/project-service/github"
 	"github.com/r-cloud/project-service/repository"
@@ -27,15 +28,40 @@ func NewProjectService(
 	}
 }
 
-func (s *ProjectService) CreateProject(userID, name, description string) (*models.Project, error) {
+func (s *ProjectService) CreateProject(userID, name, description, repoURL, branch string) (*models.Project, error) {
 	if name == "" {
 		return nil, errors.New("project name is required")
 	}
 
 	project := &models.Project{
-		UserID:      userID,
-		Name:        name,
-		Description: description,
+		UserID:        userID,
+		Name:          name,
+		Description:   description,
+		DefaultBranch: s.defaultBranch,
+	}
+
+	if branch != "" {
+		project.DefaultBranch = branch
+	}
+
+	if repoURL != "" {
+		project.GithubRepoURL = repoURL
+
+		repoInfo, err := s.githubClient.ValidateRepository(repoURL)
+		if err == nil && repoInfo != nil {
+			project.GithubRepoURL = repoInfo.CloneURL
+			project.GithubRepoName = repoInfo.Name
+			project.GithubOwner = repoInfo.Owner.Login
+			if repoInfo.DefaultBranch != "" && branch == "" {
+				project.DefaultBranch = repoInfo.DefaultBranch
+			}
+		} else {
+			owner, repoName, parseErr := github.ParseRepoURL(repoURL)
+			if parseErr == nil {
+				project.GithubRepoName = strings.TrimSuffix(repoName, ".git")
+				project.GithubOwner = owner
+			}
+		}
 	}
 
 	if err := s.repo.Create(project); err != nil {

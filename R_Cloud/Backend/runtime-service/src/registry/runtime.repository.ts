@@ -57,6 +57,12 @@ export class RuntimeRepository {
     return result.rows[0]
   }
 
+  async getRuntimeByDeploymentId(deploymentId: string) {
+    const query = 'SELECT * FROM runtime_registry WHERE deployment_id = $1 ORDER BY created_at DESC LIMIT 1;'
+    const result = await db.query(query, [deploymentId])
+    return result.rows[0]
+  }
+
   async getAgentsByRuntime(runtimeId: string) {
     const query = 'SELECT * FROM agent_registry WHERE runtime_id = $1;'
     const result = await db.query(query, [runtimeId])

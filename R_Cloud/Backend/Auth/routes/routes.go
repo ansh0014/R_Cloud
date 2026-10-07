@@ -9,11 +9,18 @@ import (
 func SetupRoutes(authHandler *handler.AuthHandler) *mux.Router {
 	router := mux.NewRouter()
 
-	// CORS is handled centrally by the API Gateway to prevent duplicate headers
+	router.Use(authHandler.CORSMiddleware)
+
 	router.HandleFunc("/health", authHandler.HealthCheck).Methods("GET")
 
 	router.HandleFunc("/auth/login", authHandler.Login).Methods("POST", "OPTIONS")
 	router.HandleFunc("/auth/logout", authHandler.Logout).Methods("POST", "GET", "OPTIONS")
+
+	// Support direct hits to /api/v1/auth/* as well as forwarded /auth/*
+	v1Auth := router.PathPrefix("/api/v1/auth").Subrouter()
+	v1Auth.HandleFunc("/login", authHandler.Login).Methods("POST", "OPTIONS")
+	v1Auth.HandleFunc("/logout", authHandler.Logout).Methods("POST", "GET", "OPTIONS")
+	v1Auth.HandleFunc("/profile", authHandler.GetProfile).Methods("GET", "OPTIONS")
 
 	api := router.PathPrefix("/api").Subrouter()
 	api.Use(authHandler.AuthMiddleware)
