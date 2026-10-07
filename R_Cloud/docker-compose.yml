@@ -65,10 +65,13 @@ services:
     env_file:
       - ./Backend/deployment-service/.env
     environment:
+      CLONE_BASE_DIR: "/tmp/clones"
       NATS_URL: "nats://nats:4222"
       RUNTIME_SERVICE_ADDR: "runtime-service:50051"
       VALIDATION_SERVICE_URL: "http://validation-service:8086"
       PLANNER_SERVICE_URL: "http://deployment-planner:8085"
+    volumes:
+      - shared_clones:/tmp/clones
     ports:
       - "8083:8083"
     depends_on:
@@ -93,6 +96,8 @@ services:
       context: .
       dockerfile: Backend/validation-service/Dockerfile
     container_name: rcloud-validation-service
+    volumes:
+      - shared_clones:/tmp/clones
     env_file:
       - ./Backend/validation-service/.env
     ports:
@@ -181,3 +186,4 @@ services:
 
 volumes:
   postgres_data:
+  shared_clones:

@@ -66,6 +66,12 @@ func connectDB(databaseURL string) (*sql.DB, error) {
 		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 		updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 	);
+	DO $$
+	BEGIN
+		ALTER TABLE projects ALTER COLUMN user_id TYPE TEXT USING user_id::text;
+	EXCEPTION
+		WHEN OTHERS THEN NULL;
+	END $$;
 	CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
 	`
 	if _, err := db.Exec(createProjectsTableQuery); err != nil {

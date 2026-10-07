@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -53,8 +54,10 @@ func (h *DeploymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		EnvVars:   req.EnvVars,
 	}
 
+	log.Printf("[DeploymentHandler] Received deployment request: ProjectID=%s, UserID=%s, RepoURL=%s, Branch=%s", req.ProjectID, userID, req.RepoURL, req.Branch)
 	deployment, err := h.service.Deploy(r.Context(), deployReq)
 	if err != nil {
+		log.Printf("[DeploymentHandler] Deploy failed for ProjectID=%s: %v", req.ProjectID, err)
 		if errors.Is(err, service.ErrCircuitBreakerOpen) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -64,6 +67,7 @@ func (h *DeploymentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "DEPLOYMENT_FAILED", err.Error())
 		return
 	}
+	log.Printf("[DeploymentHandler] Deploy successfully initiated: DeploymentID=%s", deployment.ID)
 
 	utils.WriteSuccess(w, http.StatusCreated, deployment, "Deployment started")
 }

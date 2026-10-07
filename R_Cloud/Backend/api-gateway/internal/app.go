@@ -34,8 +34,8 @@ func NewApp(cfg *config.Config) (*App, error) {
 	runtimeH := handlers.NewRuntimeHandler(cfg.RuntimeServiceURL, serviceProxy)
 	agentOpsH := handlers.NewAgentOpsHandler(cfg.AgentOpsServiceURL, serviceProxy)
 	execH := handlers.NewExecutionProxyHandler(cfg.RuntimeServiceURL, serviceProxy)
-
-	router := routes.RegisterRoutes(mw, wsHub, authH, projectH, deploymentH, runtimeH, agentOpsH, execH)
+    aiH := handlers.NewAIValidationHandler(cfg.AIValidationURL, serviceProxy)
+	router := routes.RegisterRoutes(mw, wsHub, authH, projectH, deploymentH, runtimeH, agentOpsH, execH, aiH)
 
 	return &App{
 		Config: cfg,

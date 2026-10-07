@@ -14,6 +14,7 @@ type Config struct {
 	DeploymentServiceURL string
 	RuntimeServiceURL    string
 	AgentOpsServiceURL   string
+	AIValidationURL      string
 	NatsURL              string
 	FrontendURL          string
 	JWTSecret            string
@@ -30,6 +31,7 @@ func LoadConfig() (*Config, error) {
 	deploymentURL := getEnv("DEPLOYMENT_SERVICE_URL", "http://localhost:8083")
 	runtimeURL := getEnv("RUNTIME_SERVICE_URL", "http://localhost:8084")
 	agentOpsURL := getEnv("AGENTOPS_SERVICE_URL", "http://localhost:8085")
+	aiValidationURL := getEnv("AI_VALIDATION_URL", "http://localhost:8087")
 	natsURL := getEnv("NATS_URL", "nats://localhost:4222")
 	frontendURL := getEnv("FRONTEND_URL", "http://localhost:5173")
 	jwtSecret := getEnv("JWT_SECRET", "rcloud-default-secret-key")
@@ -41,6 +43,7 @@ func LoadConfig() (*Config, error) {
 		DeploymentServiceURL: deploymentURL,
 		RuntimeServiceURL:    runtimeURL,
 		AgentOpsServiceURL:   agentOpsURL,
+		AIValidationURL:      aiValidationURL,
 		NatsURL:              natsURL,
 		FrontendURL:          frontendURL,
 		JWTSecret:            jwtSecret,

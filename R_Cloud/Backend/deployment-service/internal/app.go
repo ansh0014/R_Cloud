@@ -91,17 +91,24 @@ func connectDB(databaseURL string) (*sql.DB, error) {
 	createDeploymentsTableQuery := `
 	CREATE TABLE IF NOT EXISTS deployments (
 		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-		project_id TEXT NOT NULL,
+		project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
 		user_id TEXT NOT NULL,
 		branch TEXT NOT NULL,
 		commit_hash TEXT,
 		version TEXT,
 		mode TEXT,
-		status TEXT NOT NULL,
+		status TEXT NOT NULL DEFAULT 'VALIDATING',
 		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 		completed_at TIMESTAMPTZ
 	);
+	DO $$
+	BEGIN
+		ALTER TABLE deployments ALTER COLUMN user_id TYPE TEXT USING user_id::text;
+	EXCEPTION
+		WHEN OTHERS THEN NULL;
+	END $$;
 	CREATE INDEX IF NOT EXISTS idx_deployments_project_id ON deployments(project_id);
+	CREATE INDEX IF NOT EXISTS idx_deployments_user_id ON deployments(user_id);
 	`
 	if _, err := db.Exec(createDeploymentsTableQuery); err != nil {
 		return nil, fmt.Errorf("failed to run deployments table migration: %w", err)

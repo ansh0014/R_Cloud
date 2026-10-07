@@ -19,6 +19,7 @@ func RegisterRoutes(
 	runtimeH *handlers.RuntimeHandler,
 	agentOpsH *handlers.AgentOpsHandler,
 	execH *handlers.ExecutionProxyHandler,
+	aiH *handlers.AIValidationHandler,
 ) *mux.Router {
 	router := mux.NewRouter()
 
@@ -51,6 +52,9 @@ func RegisterRoutes(
 	v1.HandleFunc("/deployments/{deploymentId}/execute", execH.Execute).Methods(http.MethodPost, http.MethodOptions)
 	v1.HandleFunc("/deployments/{deploymentId}/stream", execH.Stream).Methods(http.MethodPost, http.MethodOptions)
 
+	// Project Deployments Route (Must be declared before general project routes)
+	v1.HandleFunc("/projects/{projectId}/deployments", deploymentH.Proxy).Methods(http.MethodGet, http.MethodOptions)
+
 	// Deployment Routes
 	v1.PathPrefix("/deployments").HandlerFunc(deploymentH.Proxy)
 
@@ -62,6 +66,9 @@ func RegisterRoutes(
 
 	// AgentOps Routes (if needed)
 	v1.PathPrefix("/agentops").HandlerFunc(agentOpsH.Proxy)
+
+	// AI Validation Agent Routes
+	v1.PathPrefix("/ai").HandlerFunc(aiH.Proxy)
 
 	return router
 }
