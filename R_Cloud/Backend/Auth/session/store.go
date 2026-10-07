@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"auth/config"
 
 	infraredis "github.com/r-cloud/infrastructure/redis"
-	"auth/config"
 )
 
 // Data holds the session payload stored in Redis.
@@ -91,4 +91,3 @@ func randomID() (string, error) {
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
-

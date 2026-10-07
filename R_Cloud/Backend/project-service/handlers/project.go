@@ -21,6 +21,8 @@ func NewProjectHandler(s *service.ProjectService) *ProjectHandler {
 type CreateProjectRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	RepoURL     string `json:"repoUrl"`
+	Branch      string `json:"branch"`
 }
 
 
@@ -40,7 +42,7 @@ func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	project, err := h.service.CreateProject(userID, req.Name, req.Description)
+	project, err := h.service.CreateProject(userID, req.Name, req.Description, req.RepoURL, req.Branch)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
 		return
