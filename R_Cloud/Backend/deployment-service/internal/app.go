@@ -35,7 +35,7 @@ func NewApp(cfg *config.Config) (*App, error) {
 		return nil, fmt.Errorf("nats connection failed: %w", err)
 	}
 
-	runtimeClient, err := grpcclient.NewRuntimeClient(cfg.RuntimeServiceAddr, 30*time.Second)
+	runtimeClient, err := grpcclient.NewRuntimeClient(cfg.RuntimeServiceAddr, 10*time.Minute)
 	if err != nil {
 		return nil, fmt.Errorf("runtime service connection failed: %w", err)
 	}
