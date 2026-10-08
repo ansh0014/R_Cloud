@@ -70,6 +70,8 @@ services:
       RUNTIME_SERVICE_ADDR: "runtime-service:50051"
       VALIDATION_SERVICE_URL: "http://validation-service:8086"
       PLANNER_SERVICE_URL: "http://deployment-planner:8085"
+      SERVER_WRITE_TIMEOUT_SECONDS: "600"
+      SERVER_READ_TIMEOUT_SECONDS: "600"
     volumes:
       - shared_clones:/tmp/clones
     ports:

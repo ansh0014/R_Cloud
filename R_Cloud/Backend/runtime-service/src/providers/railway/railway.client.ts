@@ -3,6 +3,7 @@ import { RailwayApiError } from '../../errors/railway.error.js'
 
 export class RailwayClient {
   private readonly apiUrl = 'https://backboard.railway.app/graphql/v2'
+  private cachedWorkspaceId: string | null = null
   
   private readonly headers = {
     'Content-Type': 'application/json',
@@ -21,20 +22,40 @@ export class RailwayClient {
       })
       const json = (await response.json()) as any
       
-      if (json.errors) {
-        throw new Error(json.errors[0].message)
+      if (json.errors && json.errors.length > 0) {
+        const errMsg = json.errors.map((e: any) => e.message).join('; ')
+        throw new RailwayApiError(errMsg, { errors: json.errors, query })
       }
       return json.data
     } catch (error) {
-      throw new RailwayApiError('Failed to communicate with Railway API', { originalError: error, query })
+      if (error instanceof RailwayApiError) {
+        throw error
+      }
+      const errMsg = error instanceof Error ? error.message : 'Failed to communicate with Railway API'
+      throw new RailwayApiError(errMsg, { originalError: String(error), query })
     }
   }
 
+  async getWorkspaceId(): Promise<string | null> {
+    if (this.cachedWorkspaceId) return this.cachedWorkspaceId
+    try {
+      const data = await this.executeQuery(`query { me { workspaces { id } } }`)
+      const ws = data?.me?.workspaces?.[0]?.id
+      if (ws) {
+        this.cachedWorkspaceId = ws
+        return ws
+      }
+    } catch {
+      // workspace fetch optional fallback
+    }
+    return null
+  }
   
   async createProject(name: string) {
+    const workspaceId = await this.getWorkspaceId()
     const query = `
-      mutation CreateProject($name: String!) {
-        projectCreate(input: { name: $name }) {
+      mutation CreateProject($name: String!, $workspaceId: String) {
+        projectCreate(input: { name: $name, workspaceId: $workspaceId }) {
           id
           environments {
             edges {
@@ -47,7 +68,7 @@ export class RailwayClient {
         }
       }
     `
-    const data = await this.executeQuery(query, { name })
+    const data = await this.executeQuery(query, { name, workspaceId })
     
     // Railway automatically creates a 'production' environment inside the new project.
     // We need BOTH the projectId and the environmentId for the next steps!
@@ -57,25 +78,38 @@ export class RailwayClient {
     }
   }
 
-  async createService(projectId: string, repoUrl: string, branch: string, startCommand: string) {
+  async createService(projectId: string, repoUrl: string, branch: string) {
+    const repo = repoUrl.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '')
     const query = `
-      mutation CreateService($projectId: String!, $repoUrl: String!, $branch: String!, $startCommand: String!) {
+      mutation CreateService($projectId: String!, $repo: String!, $branch: String) {
         serviceCreate(input: {
           projectId: $projectId,
+          branch: $branch,
           source: {
-            repo: $repoUrl,
-            branch: $branch
-          },
-          startCommand: $startCommand
+            repo: $repo
+          }
         }) {
           id
         }
       }
     `
-    const variables = { projectId, repoUrl, branch, startCommand }
+    const variables = { projectId, repo, branch }
     const data = await this.executeQuery(query, variables)
     
     return data.serviceCreate.id as string
+  }
+
+  async updateServiceInstance(environmentId: string, serviceId: string, input: { startCommand?: string; buildCommand?: string }) {
+    const query = `
+      mutation UpdateServiceInstance($environmentId: String!, $serviceId: String!, $input: ServiceInstanceUpdateInput!) {
+        serviceInstanceUpdate(
+          environmentId: $environmentId,
+          serviceId: $serviceId,
+          input: $input
+        )
+      }
+    `
+    await this.executeQuery(query, { environmentId, serviceId, input })
   }
 
   async setEnvironmentVariables(projectId: string, environmentId: string, serviceId: string, envVars: Record<string, string>) {

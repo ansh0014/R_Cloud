@@ -70,8 +70,17 @@ export async function provisionMonolith(req: CreateRuntimeRequest): Promise<Prov
 
   
   const startCommand = req.start_command || 'python app.py'
-  const serviceId = await railwayClient.createService(projectId, repoUrl, branch, startCommand)
+  const serviceId = await railwayClient.createService(projectId, repoUrl, branch)
   logger.info({ serviceId }, 'Created Railway service')
+
+  if (startCommand) {
+    try {
+      await railwayClient.updateServiceInstance(environmentId, serviceId, { startCommand })
+      logger.info({ serviceId, startCommand }, 'Updated service start command')
+    } catch (err) {
+      logger.warn({ err, serviceId }, 'Failed to set custom start command, using defaults')
+    }
+  }
 
   if (req.environment && Object.keys(req.environment).length > 0) {
     await railwayClient.setEnvironmentVariables(projectId, environmentId, serviceId, req.environment)
@@ -117,7 +126,14 @@ export async function provisionMicroservices(req: CreateRuntimeRequest): Promise
     
     // The start command runs the specific agent entrypoint
     const startCommand = `python ${svcPlan.entrypoint}`
-    const serviceId = await railwayClient.createService(projectId, repoUrl, branch, startCommand)
+    const serviceId = await railwayClient.createService(projectId, repoUrl, branch)
+    if (startCommand) {
+      try {
+        await railwayClient.updateServiceInstance(environmentId, serviceId, { startCommand })
+      } catch (err) {
+        logger.warn({ err, serviceId }, 'Failed to set agent start command, using defaults')
+      }
+    }
 
     // Set env variables
     if (req.environment && Object.keys(req.environment).length > 0) {
