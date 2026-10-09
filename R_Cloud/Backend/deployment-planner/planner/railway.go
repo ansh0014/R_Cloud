@@ -54,16 +54,8 @@ func (a *RailwayAdapter) getBuildCommand(runtime string) string {
 }
 
 func (a *RailwayAdapter) getStartCommand(runtime, mode string) string {
-	switch runtime {
-	case "node", "javascript", "typescript":
-		return "npm start"
-	case "go", "golang":
-		return "./app"
-	case "python":
-		fallthrough
-	default:
-		return "uvicorn main:app --host 0.0.0.0 --port $PORT"
-	}
+	// Return empty string by default so Railway uses the repository's Dockerfile/Procfile/Buildpack CMD
+	return ""
 }
 
 func (a *RailwayAdapter) buildServices(vr models.ValidationResult	) []models.ServicePlan {

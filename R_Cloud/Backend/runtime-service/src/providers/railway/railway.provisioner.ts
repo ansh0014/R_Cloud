@@ -69,14 +69,13 @@ export async function provisionMonolith(req: CreateRuntimeRequest): Promise<Prov
   logger.info({ projectId, environmentId }, 'Created Railway project')
 
   
-  const startCommand = req.start_command || 'python app.py'
   const serviceId = await railwayClient.createService(projectId, repoUrl, branch)
   logger.info({ serviceId }, 'Created Railway service')
 
-  if (startCommand) {
+  if (req.start_command && req.start_command.trim() !== '') {
     try {
-      await railwayClient.updateServiceInstance(environmentId, serviceId, { startCommand })
-      logger.info({ serviceId, startCommand }, 'Updated service start command')
+      await railwayClient.updateServiceInstance(environmentId, serviceId, { startCommand: req.start_command })
+      logger.info({ serviceId, startCommand: req.start_command }, 'Updated service start command')
     } catch (err) {
       logger.warn({ err, serviceId }, 'Failed to set custom start command, using defaults')
     }
