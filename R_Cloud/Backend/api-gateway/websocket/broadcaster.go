@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	gorillaws "github.com/gorilla/websocket"
 	natspkg "github.com/nats-io/nats.go"
@@ -81,8 +82,11 @@ func (h *Hub) HandleWS(w http.ResponseWriter, r *http.Request) {
 // BroadcastEvent pushes an event message to all connected WebSocket clients.
 func (h *Hub) BroadcastEvent(eventType string, payload interface{}) {
 	data, err := json.Marshal(map[string]interface{}{
-		"event": eventType,
-		"data":  payload,
+		"type":      eventType,
+		"event":     eventType,
+		"payload":   payload,
+		"data":      payload,
+		"timestamp": time.Now().UTC().Format(time.RFC3339),
 	})
 	if err != nil {
 		return

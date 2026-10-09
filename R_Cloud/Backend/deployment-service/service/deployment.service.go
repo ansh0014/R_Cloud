@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -91,64 +92,77 @@ func (s *DeploymentService) Deploy(ctx context.Context, req DeployRequest) (*mod
 	}
 	_ = s.publisher.PublishCreated(ctx, event)
 
-	repoDir, err := githubclient.CloneRepository(ctx, req.RepoURL, req.Branch, s.cloneBaseDir, req.RepoName, s.gitTimeout)
+	// Execute deployment pipeline asynchronously to avoid HTTP client timeout
+	go s.executePipeline(deployment.ID, req, event)
+
+	return deployment, nil
+}
+
+func (s *DeploymentService) executePipeline(deploymentID string, req DeployRequest, event publisher.DeploymentEvent) {
+	bgCtx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
+	repoDir, err := githubclient.CloneRepository(bgCtx, req.RepoURL, req.Branch, s.cloneBaseDir, req.RepoName, s.gitTimeout)
 	if err != nil {
-		s.failDeployment(ctx, deployment.ID, event)
-		return nil, fmt.Errorf("repository clone failed: %w", err)
+		log.Printf("[DeploymentService] Repository clone failed for %s: %v", deploymentID, err)
+		s.failDeployment(bgCtx, deploymentID, event)
+		return
 	}
 	defer githubclient.Cleanup(repoDir)
 
 	commitHash, err := githubclient.GetHeadCommitHash(repoDir)
 	if err != nil {
-		s.failDeployment(ctx, deployment.ID, event)
-		return nil, fmt.Errorf("failed to read commit hash: %w", err)
+		log.Printf("[DeploymentService] Failed to read commit hash for %s: %v", deploymentID, err)
+		s.failDeployment(bgCtx, deploymentID, event)
+		return
 	}
 
-	validationResult, err := s.callValidationService(ctx, repoDir)
+	validationResult, err := s.callValidationService(bgCtx, repoDir)
 	if err != nil {
-		s.failDeployment(ctx, deployment.ID, event)
-		return nil, fmt.Errorf("validation service error: %w", err)
+		log.Printf("[DeploymentService] Validation service error for %s: %v", deploymentID, err)
+		s.failDeployment(bgCtx, deploymentID, event)
+		return
 	}
 
 	if !validationResult.Valid {
-		s.failDeployment(ctx, deployment.ID, event)
-		return nil, fmt.Errorf("validation failed: %s", strings.Join(validationResult.Errors, ", "))
+		log.Printf("[DeploymentService] Validation failed for %s: %s", deploymentID, strings.Join(validationResult.Errors, ", "))
+		s.failDeployment(bgCtx, deploymentID, event)
+		return
 	}
 
-	deployPlan, err := s.callPlannerService(ctx, validationResult, req.EnvVars)
+	deployPlan, err := s.callPlannerService(bgCtx, validationResult, req.EnvVars)
 	if err != nil {
-		s.failDeployment(ctx, deployment.ID, event)
-		return nil, fmt.Errorf("deployment planner error: %w", err)
+		log.Printf("[DeploymentService] Deployment planner error for %s: %v", deploymentID, err)
+		s.failDeployment(bgCtx, deploymentID, event)
+		return
 	}
 
-	if err := s.repo.UpdateStatus(deployment.ID, "DEPLOYING"); err != nil {
-		return nil, fmt.Errorf("failed to update deployment status to DEPLOYING: %w", err)
+	if err := s.repo.UpdateStatus(deploymentID, "DEPLOYING"); err != nil {
+		log.Printf("[DeploymentService] Failed to update status to DEPLOYING for %s: %v", deploymentID, err)
+		return
 	}
 
 	runtimeReq := grpcclient.CreateRuntimeRequest{
-		DeploymentID: deployment.ID,
+		DeploymentID: deploymentID,
 		Plan:         deployPlan,
 	}
 
-	_, err = s.runtimeClient.CreateRuntime(ctx, runtimeReq)
+	_, err = s.runtimeClient.CreateRuntime(bgCtx, runtimeReq)
 	if err != nil {
-		s.failDeployment(ctx, deployment.ID, event)
-		return nil, fmt.Errorf("runtime service call failed: %w", err)
+		log.Printf("[DeploymentService] Runtime service call failed for %s: %v", deploymentID, err)
+		s.failDeployment(bgCtx, deploymentID, event)
+		return
 	}
 
-	deployment.CommitHash = commitHash
-	deployment.Mode = deployPlan.Mode
-	deployment.Status = "RUNNING"
-
-	if err := s.repo.MarkCompleted(deployment.ID, "RUNNING"); err != nil {
-		return nil, fmt.Errorf("failed to mark deployment as running: %w", err)
+	if err := s.repo.MarkCompleted(deploymentID, "RUNNING"); err != nil {
+		log.Printf("[DeploymentService] Failed to mark deployment as running for %s: %v", deploymentID, err)
+		return
 	}
 
 	event.Status = "RUNNING"
 	event.Timestamp = time.Now().UTC()
-	_ = s.publisher.PublishCompleted(ctx, event)
-
-	return deployment, nil
+	_ = s.publisher.PublishCompleted(bgCtx, event)
+	log.Printf("[DeploymentService] Deployment pipeline completed successfully for %s (commit %s)", deploymentID, commitHash)
 }
 
 func (s *DeploymentService) GetDeployment(deploymentID string) (*models.Deployment, error) {
