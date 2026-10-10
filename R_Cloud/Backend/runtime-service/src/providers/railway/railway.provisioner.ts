@@ -7,7 +7,7 @@ import { db } from '../../database/postgres.js'
 
 async function waitForDeployment(serviceId: string, environmentId: string): Promise<void> {
   const timeoutMs = 10 * 60 * 1000 // 10 minutes 
-  const intervalMs = 10000 
+  const intervalMs = 10000
   const startTime = Date.now()
 
   while (Date.now() - startTime < timeoutMs) {
@@ -68,14 +68,16 @@ export async function provisionMonolith(req: CreateRuntimeRequest): Promise<Prov
   const { projectId, environmentId } = await railwayClient.createProject(projectName)
   logger.info({ projectId, environmentId }, 'Created Railway project')
 
-  
+
   const serviceId = await railwayClient.createService(projectId, repoUrl, branch)
   logger.info({ serviceId }, 'Created Railway service')
 
-  if (req.start_command && req.start_command.trim() !== '') {
+  const servicePlan = req.services[0]
+  const startCommand = buildServiceStartCommand(servicePlan?.entrypoint || '') || req.start_command?.trim() || ''
+  if (startCommand) {
     try {
-      await railwayClient.updateServiceInstance(environmentId, serviceId, { startCommand: req.start_command })
-      logger.info({ serviceId, startCommand: req.start_command }, 'Updated service start command')
+      await railwayClient.updateServiceInstance(environmentId, serviceId, { startCommand })
+      logger.info({ serviceId, startCommand }, 'Updated service start command')
     } catch (err) {
       logger.warn({ err, serviceId }, 'Failed to set custom start command, using defaults')
     }
@@ -93,9 +95,9 @@ export async function provisionMonolith(req: CreateRuntimeRequest): Promise<Prov
   await waitForDeployment(serviceId, environmentId)
 
   const deployedService: DeployedService = {
-    name: 'main',
+    name: servicePlan?.name || 'main',
     serviceId,
-    url: serviceUrl   
+    url: serviceUrl
   }
 
   return {
@@ -106,6 +108,29 @@ export async function provisionMonolith(req: CreateRuntimeRequest): Promise<Prov
 }
 
 
+
+function buildServiceStartCommand(entrypoint: string): string {
+  const normalized = (entrypoint || '').trim().replace(/\\/g, '/')
+  if (!normalized) {
+    return ''
+  }
+
+  const lower = normalized.toLowerCase()
+  if (lower.endsWith('.py')) {
+    return `python ${normalized}`
+  }
+  if (lower.endsWith('.js') || lower.endsWith('.mjs') || lower.endsWith('.cjs')) {
+    return `node ${normalized}`
+  }
+  if (lower.endsWith('.ts')) {
+    return `npx tsx ${normalized}`
+  }
+  if (lower.endsWith('.go')) {
+    return `go run ${normalized}`
+  }
+
+  return normalized
+}
 
 export async function provisionMicroservices(req: CreateRuntimeRequest): Promise<ProvisionResult> {
   logger.info({ deploymentId: req.deployment_id }, 'Provisioning Microservices Runtime on Railway')
@@ -121,16 +146,15 @@ export async function provisionMicroservices(req: CreateRuntimeRequest): Promise
 
   // 2. Provision each agent service independently inside the project
   for (const svcPlan of req.services) {
-    logger.info({ agentName: svcPlan.name }, 'Provisioning service for agent')
-    
-    // The start command runs the specific agent entrypoint
-    const startCommand = `python ${svcPlan.entrypoint}`
+    logger.info({ agentName: svcPlan.name, entrypoint: svcPlan.entrypoint }, 'Provisioning service for agent')
+
+    const startCommand = buildServiceStartCommand(svcPlan.entrypoint)
     const serviceId = await railwayClient.createService(projectId, repoUrl, branch)
     if (startCommand) {
       try {
         await railwayClient.updateServiceInstance(environmentId, serviceId, { startCommand })
       } catch (err) {
-        logger.warn({ err, serviceId }, 'Failed to set agent start command, using defaults')
+        logger.warn({ err, serviceId, startCommand }, 'Failed to set agent start command, using defaults')
       }
     }
 

@@ -58,13 +58,13 @@ func (a *RailwayAdapter) getStartCommand(runtime, mode string) string {
 	return ""
 }
 
-func (a *RailwayAdapter) buildServices(vr models.ValidationResult	) []models.ServicePlan {
+func (a *RailwayAdapter) buildServices(vr models.ValidationResult) []models.ServicePlan {
 	if vr.Mode == "microservices" && len(vr.Agents) > 0 {
 		var services []models.ServicePlan
-		for _, agentID := range vr.Agents {
+		for _, agent := range vr.Agents {
 			services = append(services, models.ServicePlan{
-				Name:          fmt.Sprintf("%s-agent", agentID),
-				Entrypoint:    fmt.Sprintf("agents/%s.py", agentID),
+				Name:          fmt.Sprintf("%s-agent", agent.ID),
+				Entrypoint:    agent.Entrypoint,
 				ExecuteRoute:  "/execute",
 				HealthRoute:   "/health",
 				MetadataRoute: "/metadata",
@@ -76,11 +76,10 @@ func (a *RailwayAdapter) buildServices(vr models.ValidationResult	) []models.Ser
 	return []models.ServicePlan{
 		{
 			Name:          "main",
-			Entrypoint:    "main.py",
+			Entrypoint:    vr.Entrypoint,
 			ExecuteRoute:  "/execute",
 			HealthRoute:   "/health",
 			MetadataRoute: "/metadata",
 		},
 	}
 }
-

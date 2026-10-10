@@ -53,6 +53,20 @@ func (r *DeploymentRepository) UpdateStatus(deploymentID, status string) error {
 	return nil
 }
 
+func (r *DeploymentRepository) UpdateMode(deploymentID, mode string) error {
+	if r.db == nil {
+		return fmt.Errorf("deployment repository database is not initialized")
+	}
+
+	query := `UPDATE deployments SET mode = $1 WHERE id = $2`
+	_, err := r.db.Exec(query, mode, deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to update deployment mode: %w", err)
+	}
+
+	return nil
+}
+
 func (r *DeploymentRepository) MarkCompleted(deploymentID, status string) error {
 	completedAt := time.Now().UTC()
 	query := `UPDATE deployments SET status = $1, completed_at = $2 WHERE id = $3`

@@ -16,6 +16,14 @@ func ValidateRepository(repoDir string, cfg *RagentConfig) []string {
 		return errs
 	}
 
+	if cfg.Application.Mode == ModeMonolith {
+		if cfg.Application.Entrypoint == "" {
+			errs = append(errs, "monolith mode requires application.entrypoint in ragent.yaml")
+		} else if err := validateEntrypoint(repoDir, cfg.Application.Entrypoint, "application"); err != "" {
+			errs = append(errs, err)
+		}
+	}
+
 	// Validate agent entrypoints if in microservices mode
 	if cfg.Application.Mode == ModeMicroservices {
 		if len(cfg.Agents) == 0 {
@@ -34,15 +42,23 @@ func ValidateRepository(repoDir string, cfg *RagentConfig) []string {
 				continue
 			}
 
-			entrypointPath := filepath.Join(repoDir, agent.Entrypoint)
-			agentInfo, err := os.Stat(entrypointPath)
-			if err != nil {
-				errs = append(errs, fmt.Sprintf("entrypoint file %q for agent %q not found in repository", agent.Entrypoint, agent.ID))
-			} else if agentInfo.IsDir() {
-				errs = append(errs, fmt.Sprintf("entrypoint %q for agent %q must be a file, not a directory", agent.Entrypoint, agent.ID))
+			if err := validateEntrypoint(repoDir, agent.Entrypoint, fmt.Sprintf("agent %q", agent.ID)); err != "" {
+				errs = append(errs, err)
 			}
 		}
 	}
 
 	return errs
+}
+
+func validateEntrypoint(repoDir, entrypoint, owner string) string {
+	entrypointPath := filepath.Join(repoDir, entrypoint)
+	info, err := os.Stat(entrypointPath)
+	if err != nil {
+		return fmt.Sprintf("entrypoint file %q for %s not found in repository", entrypoint, owner)
+	}
+	if info.IsDir() {
+		return fmt.Sprintf("entrypoint %q for %s must be a file, not a directory", entrypoint, owner)
+	}
+	return ""
 }

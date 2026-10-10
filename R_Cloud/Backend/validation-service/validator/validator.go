@@ -1,10 +1,16 @@
 package validator
 
 type ValidationResult struct {
-	Valid  bool     `json:"valid"`
-	Mode   string   `json:"mode,omitempty"`
-	Agents []string `json:"agents,omitempty"`
-	Errors []string `json:"errors,omitempty"`
+	Valid      bool     `json:"valid"`
+	Mode       string   `json:"mode,omitempty"`
+	Entrypoint string   `json:"entrypoint,omitempty"`
+	Agents     []Agent  `json:"agents,omitempty"`
+	Errors     []string `json:"errors,omitempty"`
+}
+
+type Agent struct {
+	ID         string `json:"id"`
+	Entrypoint string `json:"entrypoint"`
 }
 
 func Validate(repoDir string) ValidationResult {
@@ -45,16 +51,17 @@ func Validate(repoDir string) ValidationResult {
 		}
 	}
 
-	var agents []string
+	var agents []Agent
 	if cfg.Application.Mode == ModeMicroservices {
 		for _, a := range cfg.Agents {
-			agents = append(agents, a.ID)
+			agents = append(agents, Agent{ID: a.ID, Entrypoint: a.Entrypoint})
 		}
 	}
 
 	return ValidationResult{
-		Valid:  true,
-		Mode:   cfg.Application.Mode,
-		Agents: agents,
+		Valid:      true,
+		Mode:       cfg.Application.Mode,
+		Entrypoint: cfg.Application.Entrypoint,
+		Agents:     agents,
 	}
 }

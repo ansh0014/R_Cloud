@@ -18,10 +18,11 @@ type Deployment struct {
 
 // ValidationResult represents the output from the Validation Service.
 type ValidationResult struct {
-	Valid  bool     `json:"valid"`
-	Mode   string   `json:"mode,omitempty"`
-	Agents []string `json:"agents,omitempty"`
-	Errors []string `json:"errors,omitempty"`
+	Valid      bool          `json:"valid"`
+	Mode       string        `json:"mode,omitempty"`
+	Entrypoint string        `json:"entrypoint,omitempty"`
+	Agents     []RAgentAgent `json:"agents,omitempty"`
+	Errors     []string      `json:"errors,omitempty"`
 }
 
 // ServicePlan defines an individual agent/service configuration.

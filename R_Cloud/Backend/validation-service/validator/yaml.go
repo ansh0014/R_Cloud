@@ -12,12 +12,13 @@ type RagentConfig struct {
 	Application ApplicationConfig `yaml:"application"`
 	Agents      []AgentConfig     `yaml:"agents"`
 	Routes      RoutesConfig      `yaml:"routes"`
-	Env         []string          `yaml:"environment"` 
+	Env         []string          `yaml:"environment"`
 }
 
 type ApplicationConfig struct {
-	Name string `yaml:"name"`
-	Mode string `yaml:"mode"`
+	Name       string `yaml:"name"`
+	Mode       string `yaml:"mode"`
+	Entrypoint string `yaml:"entrypoint"`
 }
 
 type AgentConfig struct {
