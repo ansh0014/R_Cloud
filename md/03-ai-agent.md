@@ -280,6 +280,7 @@ Supported values:
 application:
   name: support-system
   mode: monolith
+  entrypoint: app.py
 
 routes:
   execute: /execute

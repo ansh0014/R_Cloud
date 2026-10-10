@@ -17,10 +17,11 @@ import (
 )
 
 type ValidationResult struct {
-	Valid  bool     `json:"valid"`
-	Mode   string   `json:"mode"`
-	Agents []Agent  `json:"agents"`
-	Errors []string `json:"errors"`
+	Valid      bool     `json:"valid"`
+	Mode       string   `json:"mode"`
+	Entrypoint string   `json:"entrypoint"`
+	Agents     []Agent  `json:"agents"`
+	Errors     []string `json:"errors"`
 }
 
 type Agent struct {
@@ -29,14 +30,14 @@ type Agent struct {
 }
 
 type DeploymentService struct {
-	repo                  *repo.DeploymentRepository
-	runtimeClient         *grpcclient.RuntimeClient
-	publisher             *publisher.NATSPublisher
-	cloneBaseDir          string
-	gitTimeout            time.Duration
-	validationServiceURL  string
-	plannerServiceURL     string
-	breaker               *CircuitBreaker
+	repo                 *repo.DeploymentRepository
+	runtimeClient        *grpcclient.RuntimeClient
+	publisher            *publisher.NATSPublisher
+	cloneBaseDir         string
+	gitTimeout           time.Duration
+	validationServiceURL string
+	plannerServiceURL    string
+	breaker              *CircuitBreaker
 }
 
 func NewDeploymentService(
@@ -128,6 +129,14 @@ func (s *DeploymentService) executePipeline(deploymentID string, req DeployReque
 		log.Printf("[DeploymentService] Validation failed for %s: %s", deploymentID, strings.Join(validationResult.Errors, ", "))
 		s.failDeployment(bgCtx, deploymentID, event)
 		return
+	}
+
+	if validationResult.Mode != "" {
+		if err := s.repo.UpdateMode(deploymentID, validationResult.Mode); err != nil {
+			log.Printf("[DeploymentService] Failed to persist deployment mode for %s: %v", deploymentID, err)
+			s.failDeployment(bgCtx, deploymentID, event)
+			return
+		}
 	}
 
 	deployPlan, err := s.callPlannerService(bgCtx, validationResult, req.EnvVars)

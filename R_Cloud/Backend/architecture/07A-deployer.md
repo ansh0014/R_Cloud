@@ -158,7 +158,9 @@ Example
 
 ```yaml
 application:
+  name: support-system
   mode: monolith
+  entrypoint: app.py
 ```
 
 Deployment Plan
