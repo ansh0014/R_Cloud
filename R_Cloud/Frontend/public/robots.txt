@@ -1,0 +1,34 @@
+# ==========================================================
+# R_Cloud Robots Directive File
+# Domain: https://rcloud.dev
+# ==========================================================
+
+User-agent: *
+
+# Allow Public & Marketing Pages
+Allow: /
+Allow: /features
+Allow: /pricing
+Allow: /docs
+Allow: /docs/*
+Allow: /faq
+Allow: /privacy
+Allow: /terms
+
+# Disallow Private User & Admin Dashboard Routes
+Disallow: /dashboard/
+Disallow: /dashboard/*
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /settings/
+Disallow: /settings/*
+
+# Disallow Internal APIs and Execution Proxies
+Disallow: /api/
+Disallow: /api/*
+Disallow: /ws
+Disallow: /oauth/
+
+# Sitemaps
+Sitemap: https://rcloud.dev/sitemap.xml
+Sitemap: https://rcloud.dev/sitemap.txt
