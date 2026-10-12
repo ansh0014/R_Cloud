@@ -27,7 +27,7 @@ function App() {
           <Route
             path="/"
             element={
-              <div className="relative min-h-screen w-full overflow-x-hidden">
+              <div className="relative min-h-screen w-full overflow-x-clip">
                 <Navbar />
                 <HeroSection />
               </div>
