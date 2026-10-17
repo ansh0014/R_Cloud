@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import InteractiveFooterWatermark from './InteractiveFooterWatermark';
 
 export default function LandingFooter() {
@@ -25,35 +26,35 @@ export default function LandingFooter() {
     {
       title: 'Company',
       links: [
-        { label: 'About R_Cloud', href: '/' },
+        { label: 'About R_Cloud', href: '/about' },
         { label: 'Privacy Policy', href: '/privacy' },
         { label: 'Terms of Service', href: '/terms' },
         { label: 'Security & Trust', href: '#features' },
-        { label: 'Contact Team', href: 'mailto:support@rcloud.ai' },
+        { label: 'Contact Team', href: '/contact' },
       ],
     },
   ];
 
   return (
-    <footer className="relative w-full bg-[#032018] text-white pt-20 pb-12 overflow-hidden border-t border-emerald-950">
+    <footer className="relative w-full bg-[#05180F] text-[#F7F9F7] pt-20 pb-12 overflow-hidden border-t border-[#0F3B27]">
       {/* Top Footer Content */}
       <div className="max-w-[1560px] mx-auto px-6 sm:px-10 lg:px-14 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-10 lg:gap-14 pb-16 border-b border-emerald-900/60">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-10 lg:gap-14 pb-16 border-b border-[#0F3B27]">
           {/* Brand Info */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold font-mono">
+              <div className="w-8 h-8 rounded-lg bg-[#92FF5F] flex items-center justify-center text-[#0F3B27] font-bold font-mono">
                 R
               </div>
-              <span className="font-manrope font-bold text-xl tracking-tight text-white">
+              <span className="font-manrope font-bold text-xl tracking-tight text-[#F7F9F7]">
                 R_Cloud
               </span>
             </div>
-            <p className="font-inter text-emerald-200/70 text-sm max-w-sm leading-relaxed">
+            <p className="font-inter text-[#CFF1D2]/70 text-sm max-w-sm leading-relaxed">
               The unified context cloud and autonomous agent runtime for modern enterprise AI engineering.
             </p>
-            <div className="flex items-center gap-2 pt-2 text-xs font-mono text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="flex items-center gap-2 pt-2 text-xs font-mono text-[#92FF5F]">
+              <span className="w-2 h-2 rounded-full bg-[#92FF5F] animate-pulse" />
               <span>All Systems Operational • 99.99% SLA</span>
             </div>
           </div>
@@ -61,18 +62,27 @@ export default function LandingFooter() {
           {/* Nav Links */}
           {footerSections.map((section) => (
             <div key={section.title} className="space-y-4">
-              <h4 className="font-manrope font-semibold text-xs tracking-wider uppercase text-emerald-300">
+              <h4 className="font-manrope font-bold text-xs tracking-wider uppercase text-[#92FF5F]">
                 {section.title}
               </h4>
               <ul className="space-y-2.5 text-sm font-inter">
                 {section.links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-emerald-100/70 hover:text-white transition-colors duration-200"
-                    >
-                      {link.label}
-                    </a>
+                    {link.href.startsWith('/') ? (
+                      <Link
+                        to={link.href}
+                        className="text-[#CFF1D2]/70 hover:text-[#F7F9F7] transition-colors duration-200"
+                      >
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href={link.href}
+                        className="text-[#CFF1D2]/70 hover:text-[#F7F9F7] transition-colors duration-200"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -81,18 +91,18 @@ export default function LandingFooter() {
         </div>
 
         {/* Bottom copyright and legal */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-emerald-300/50 font-mono gap-4">
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-[#CFF1D2]/50 font-mono gap-4">
           <p>© {new Date().getFullYear()} R_Cloud Technologies Inc. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <a href="/privacy" className="hover:text-emerald-200 transition-colors">
+            <Link to="/privacy" className="hover:text-[#92FF5F] transition-colors">
               Privacy Policy
-            </a>
-            <a href="/terms" className="hover:text-emerald-200 transition-colors">
+            </Link>
+            <Link to="/terms" className="hover:text-[#92FF5F] transition-colors">
               Terms of Service
-            </a>
-            <a href="/dashboard/deployments" className="hover:text-emerald-200 transition-colors">
+            </Link>
+            <Link to="/dashboard/deployments" className="hover:text-[#92FF5F] transition-colors">
               Status
-            </a>
+            </Link>
           </div>
         </div>
       </div>

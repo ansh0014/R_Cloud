@@ -229,14 +229,14 @@ export default function InteractiveFooterWatermark() {
           Math.abs(p2.y - p2.originY) > 0.4;
 
         if (isDisplaced) {
-          // Energetic glowing emerald on actively moving section
-          ctx.strokeStyle = 'rgba(52, 211, 153, 0.95)';
-          ctx.shadowColor = 'rgba(52, 211, 153, 0.6)';
-          ctx.shadowBlur = 6;
+          // Energetic glowing Signal Lime on actively moving section
+          ctx.strokeStyle = 'rgba(146, 255, 95, 0.95)';
+          ctx.shadowColor = 'rgba(146, 255, 95, 0.8)';
+          ctx.shadowBlur = 8;
           ctx.lineWidth = 2.0;
         } else {
-          // Serene deep emerald watermark resting tone
-          ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+          // Serene subtle Mint watermark resting tone
+          ctx.strokeStyle = 'rgba(207, 241, 210, 0.22)';
           ctx.shadowBlur = 0;
           ctx.lineWidth = 1.3;
         }
@@ -259,20 +259,20 @@ export default function InteractiveFooterWatermark() {
           // Active bright node where mouse hovered
           ctx.beginPath();
           ctx.arc(p.x, p.y, 3.0, 0, Math.PI * 2);
-          ctx.fillStyle = '#6ee7b7';
-          ctx.shadowColor = 'rgba(110, 231, 183, 0.8)';
-          ctx.shadowBlur = 6;
+          ctx.fillStyle = '#92FF5F';
+          ctx.shadowColor = 'rgba(146, 255, 95, 0.9)';
+          ctx.shadowBlur = 8;
           ctx.fill();
 
           ctx.beginPath();
           ctx.arc(p.x, p.y, 1.4, 0, Math.PI * 2);
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = '#F7F9F7';
           ctx.fill();
         } else {
           // Subtle rest node
           ctx.beginPath();
           ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(52, 211, 153, 0.4)';
+          ctx.fillStyle = 'rgba(207, 241, 210, 0.35)';
           ctx.fill();
         }
       }

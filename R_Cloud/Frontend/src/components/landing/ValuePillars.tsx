@@ -25,18 +25,18 @@ export default function ValuePillars() {
   ];
 
   return (
-    <section className="relative w-full py-20 bg-white border-t border-slate-100">
+    <section id="pillars" className="relative w-full py-20 bg-[#05180F] border-t border-[#0F3B27]">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {pillars.map((p) => {
             const Icon = p.icon;
             return (
-              <div key={p.title} className="flex flex-col items-start p-6 rounded-2xl bg-slate-50/70 border border-slate-200/70 hover:border-emerald-300 transition-colors">
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-800 mb-5 shadow-sm">
+              <div key={p.title} className="flex flex-col items-start p-6 rounded-2xl bg-[#0F3B27]/80 border border-[#CFF1D2]/20 hover:border-[#92FF5F]/50 shadow-lg transition-all">
+                <div className="w-12 h-12 rounded-xl bg-[#92FF5F]/15 border border-[#92FF5F]/30 flex items-center justify-center text-[#92FF5F] mb-5 shadow-sm">
                   <Icon className="w-6 h-6" />
                 </div>
-                <h3 className="text-lg font-bold font-manrope text-slate-900 mb-2">{p.title}</h3>
-                <p className="text-sm font-inter text-slate-600 leading-relaxed">{p.desc}</p>
+                <h3 className="text-lg font-bold font-manrope text-[#F7F9F7] mb-2">{p.title}</h3>
+                <p className="text-sm font-inter text-[#CFF1D2]/75 leading-relaxed">{p.desc}</p>
               </div>
             );
           })}

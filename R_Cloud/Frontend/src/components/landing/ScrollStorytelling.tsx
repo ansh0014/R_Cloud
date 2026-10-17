@@ -123,7 +123,7 @@ export default function ScrollStorytelling({ activeStep, onStepChange }: ScrollS
     <section
       id="how-it-works"
       ref={containerRef}
-      className="relative w-full bg-[#fbfdfc] border-t border-slate-200/80 scroll-mt-0"
+      className="relative w-full bg-[#F7F9F7] border-t border-[#0F3B27]/15 scroll-mt-0"
       style={{ height: '340vh' }}
     >
       {/* Background subtle radial grid pattern */}
@@ -131,7 +131,7 @@ export default function ScrollStorytelling({ activeStep, onStepChange }: ScrollS
         className="absolute inset-0 pointer-events-none opacity-40"
         style={{
           backgroundImage:
-            'radial-gradient(rgba(16, 185, 129, 0.12) 1px, transparent 1px), radial-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px)',
+            'radial-gradient(rgba(15, 59, 39, 0.12) 1px, transparent 1px), radial-gradient(rgba(146, 255, 95, 0.2) 1px, transparent 1px)',
           backgroundSize: '24px 24px',
           backgroundPosition: '0 0, 12px 12px',
         }}
@@ -142,9 +142,9 @@ export default function ScrollStorytelling({ activeStep, onStepChange }: ScrollS
         <div className="relative max-w-7xl mx-auto w-full">
           {/* Section Header */}
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-instrument text-slate-900 leading-[1.14]">
+            <h2 className="text-2xl sm:text-4xl lg:text-5xl font-instrument text-[#0F3B27] leading-[1.14]">
               How R_Cloud Powers Autonomous AI{' '}
-              <span className="italic text-emerald-700">From Ingestion to Scale</span>
+              <span className="italic font-normal underline decoration-[#92FF5F] decoration-4 underline-offset-4">From Ingestion to Scale</span>
             </h2>
           </div>
 
@@ -170,15 +170,16 @@ export default function ScrollStorytelling({ activeStep, onStepChange }: ScrollS
                       zIndex: isActive ? 20 : 10,
                       transition: 'transform 450ms cubic-bezier(0.16, 1, 0.3, 1), opacity 400ms ease',
                     }}
-                    className="absolute inset-0 rounded-3xl bg-white border border-slate-200/90 shadow-[0_16px_40px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col justify-between"
+                    className="absolute inset-0 rounded-3xl bg-white border border-[#0F3B27]/15 shadow-[0_16px_40px_rgba(15,59,39,0.08),0_1px_3px_rgba(15,59,39,0.05)] overflow-hidden flex flex-col justify-between"
                   >
                     {/* Top Card Header */}
-                    <div className="px-6 py-4 bg-gradient-to-r from-slate-50/80 via-white to-emerald-50/30 border-b border-slate-100 flex items-center">
+                    <div className="px-6 py-4 bg-gradient-to-r from-[#F7F9F7] via-white to-[#CFF1D2]/20 border-b border-[#0F3B27]/10 flex items-center">
                       <div className="flex items-center gap-2.5">
-                        <span className="font-mono text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-600 text-white shadow-xs">
+                        {/* Small Signal Lime box with mono bold text */}
+                        <span className="font-mono text-xs font-black px-2.5 py-0.5 rounded-md bg-[#92FF5F] text-[#0F3B27] shadow-xs">
                           0{step.id}
                         </span>
-                        <span className="font-manrope text-xs sm:text-sm font-bold text-slate-800">
+                        <span className="font-manrope text-xs sm:text-sm font-bold text-[#0F3B27]">
                           {step.badge} • {step.phase}
                         </span>
                       </div>
@@ -187,35 +188,35 @@ export default function ScrollStorytelling({ activeStep, onStepChange }: ScrollS
                     {/* Card Content Body */}
                     <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between">
                       <div>
-                        <h3 className="text-xl sm:text-2xl font-manrope font-bold text-slate-900 mb-2.5 leading-snug">
+                        <h3 className="text-xl sm:text-2xl font-manrope font-bold text-[#0F3B27] mb-2.5 leading-snug">
                           {step.title}
                         </h3>
 
-                        <p className="font-inter text-slate-600 text-[13px] sm:text-[14px] leading-relaxed mb-5">
+                        <p className="font-inter text-[#0F3B27]/80 text-[13px] sm:text-[14px] leading-relaxed mb-5">
                           {step.fullDesc}
                         </p>
                       </div>
 
-                      <div className="flex flex-col gap-3.5 pt-4 border-t border-slate-100">
-                        {/* 4 Feature Tags */}
+                      <div className="flex flex-col gap-3.5 pt-4 border-t border-[#0F3B27]/10">
+                        {/* 4 Feature Tags: Small Signal Lime chip boxes */}
                         <div className="flex flex-wrap gap-2">
                           {step.tags.map((tag) => (
                             <span
                               key={tag}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] sm:text-[12px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-100/90"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] sm:text-[12px] font-mono font-medium bg-[#92FF5F]/25 text-[#0F3B27] border border-[#92FF5F]/50 shadow-2xs"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#0F3B27] shrink-0" />
                               <span>{tag}</span>
                             </span>
                           ))}
                         </div>
 
                         {/* 2 Live Metrics */}
-                        <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50/90 border border-slate-200/80">
+                        <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-[#F7F9F7] border border-[#0F3B27]/10">
                           {step.metrics.map((m) => (
                             <div key={m.label}>
-                              <p className="text-[11px] font-medium text-slate-500 font-inter">{m.label}</p>
-                              <p className="text-[16px] sm:text-[17px] font-bold text-slate-900 font-manrope">
+                              <p className="text-[11px] font-mono font-semibold text-[#0F3B27]/70">{m.label}</p>
+                              <p className="text-[16px] sm:text-[17px] font-bold text-[#0F3B27] font-manrope">
                                 {m.val}
                               </p>
                             </div>

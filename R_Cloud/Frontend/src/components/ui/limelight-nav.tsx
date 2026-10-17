@@ -98,7 +98,7 @@ export const LimelightNav = ({
 
   return (
     <nav
-      className={`relative inline-flex items-center h-12 rounded-xl bg-[#0e0e11]/95 text-foreground border border-white/10 px-2 shadow-2xl backdrop-blur-xl ${className}`}
+      className={`relative inline-flex items-center h-12 rounded-xl bg-[#0F3B27]/95 text-foreground border border-[#CFF1D2]/20 px-2 shadow-2xl backdrop-blur-xl ${className}`}
     >
       {items.map(({ id, icon, label, onClick }, index) => {
         const isCurrentActive = activeIndex === index;
@@ -116,14 +116,14 @@ export const LimelightNav = ({
             {cloneElement(icon as React.ReactElement<{ className?: string }>, {
               className: `w-5 h-5 transition-all duration-200 ease-in-out ${
                 isCurrentActive
-                  ? 'opacity-100 text-white scale-105 drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]'
-                  : 'opacity-40 hover:opacity-75 text-neutral-400'
+                  ? 'opacity-100 text-[#92FF5F] scale-105 drop-shadow-[0_0_8px_rgba(146,255,95,0.6)]'
+                  : 'opacity-40 hover:opacity-85 text-[#F7F9F7]'
               } ${(icon.props as { className?: string })?.className || ''} ${iconClassName}`,
             })}
             {showLabels && label && (
               <span
                 className={`font-manrope font-semibold text-xs transition-colors duration-200 ${
-                  isCurrentActive ? 'text-white opacity-100' : 'text-neutral-400 opacity-60 hover:opacity-90'
+                  isCurrentActive ? 'text-[#92FF5F] opacity-100' : 'text-[#F7F9F7] opacity-60 hover:opacity-90'
                 }`}
               >
                 {label}
@@ -136,12 +136,12 @@ export const LimelightNav = ({
       {/* Limelight spotlight beam */}
       <div
         ref={limelightRef}
-        className={`absolute top-0 z-10 w-10 h-[3px] rounded-full bg-white shadow-[0_0_8px_#ffffff,0_0_18px_rgba(255,255,255,0.8)] ${
+        className={`absolute top-0 z-10 w-10 h-[3px] rounded-full bg-[#92FF5F] shadow-[0_0_8px_#92FF5F,0_0_18px_rgba(146,255,95,0.8)] ${
           isReady ? 'transition-[left] duration-300 ease-out' : ''
         } ${limelightClassName}`}
         style={{ left: '-999px' }}
       >
-        <div className="absolute left-[-45%] top-[3px] w-[190%] h-11 [clip-path:polygon(10%_100%,28%_0,72%_0,90%_100%)] bg-gradient-to-b from-white/35 via-white/10 to-transparent pointer-events-none" />
+        <div className="absolute left-[-45%] top-[3px] w-[190%] h-11 [clip-path:polygon(10%_100%,28%_0,72%_0,90%_100%)] bg-gradient-to-b from-[#92FF5F]/40 via-[#92FF5F]/15 to-transparent pointer-events-none" />
       </div>
     </nav>
   );

@@ -56,9 +56,15 @@ export default {
           foreground: 'hsl(var(--card-foreground))',
         },
 
-        /* ── R Agent Cloud brand tokens ─────────────── */
-        'brand-purple': '#7b39fc',
-        'brand-dark':   '#2b2344',
+        /* ── R_Cloud Brand Palette Tokens ───────────── */
+        'move-green':   '#0F3B27',
+        'move-dark':    '#071F14',
+        'move-canvas':  '#05180F',
+        'signal-lime':  '#92FF5F',
+        'soft-white':   '#F7F9F7',
+        'brand-orange': '#FF7036',
+        'brand-ice':    '#BFF2F0',
+        'brand-mint':   '#CFF1D2',
       },
 
       borderRadius: {

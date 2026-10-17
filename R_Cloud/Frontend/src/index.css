@@ -1,57 +1,61 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Cabin:wght@400;500;600;700&family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Cabin:wght@400;500;600;700&family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ─── shadcn/ui CSS Variables ─────────────────────────────
-   Primary purple: #7b39fc → hsl(261 97% 61%)
-   Dark purple:    #2b2344 → hsl(253 32% 20%)
+/* ─── R_Cloud Brand Design System Tokens ─────────────────
+   Move Green:   #0F3B27 → hsl(153 59% 15%)
+   Signal Lime:  #92FF5F → hsl(101 100% 69%)
+   Soft White:   #F7F9F7 → hsl(120 7% 97%)
+   Orange:       #FF7036 → hsl(17 100% 61%)
+   Ice:          #BFF2F0 → hsl(178 63% 85%)
+   Mint:         #CFF1D2 → hsl(126 50% 88%)
 ───────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    --background:         0 0% 100%;
-    --foreground:         224 71% 4%;
+    --background:         120 7% 97%;   /* #F7F9F7 Soft White */
+    --foreground:         153 59% 15%;  /* #0F3B27 Move Green */
     --card:               0 0% 100%;
-    --card-foreground:    224 71% 4%;
+    --card-foreground:    153 59% 15%;
     --popover:            0 0% 100%;
-    --popover-foreground: 224 71% 4%;
-    --primary:            261 97% 61%;
-    --primary-foreground: 0 0% 100%;
-    --secondary:          220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
-    --muted:              220 14% 96%;
-    --muted-foreground:   220 9% 46%;
-    --accent:             220 14% 96%;
-    --accent-foreground:  224 71% 4%;
-    --destructive:        0 84% 60%;
+    --popover-foreground: 153 59% 15%;
+    --primary:            101 100% 69%; /* #92FF5F Signal Lime */
+    --primary-foreground: 153 59% 15%;  /* #0F3B27 Move Green */
+    --secondary:          126 50% 88%;  /* #CFF1D2 Mint */
+    --secondary-foreground: 153 59% 15%;
+    --muted:              120 7% 92%;
+    --muted-foreground:   153 30% 35%;
+    --accent:             101 100% 69%;
+    --accent-foreground:  153 59% 15%;
+    --destructive:        17 100% 61%;  /* #FF7036 Orange */
     --destructive-foreground: 0 0% 100%;
-    --border:             220 13% 91%;
-    --input:              220 13% 91%;
-    --ring:               261 97% 61%;
+    --border:             153 30% 85%;
+    --input:              153 30% 85%;
+    --ring:               101 100% 69%;
     --radius:             0.5rem;
   }
 
   .dark {
-    --background:         224 71% 4%;
-    --foreground:         0 0% 100%;
-    --card:               224 71% 6%;
-    --card-foreground:    0 0% 100%;
-    --popover:            224 71% 6%;
-    --popover-foreground: 0 0% 100%;
-    --primary:            261 97% 61%;
-    --primary-foreground: 0 0% 100%;
-    --secondary:          215 28% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted:              215 28% 17%;
-    --muted-foreground:   215 20% 65%;
-    --accent:             215 28% 17%;
-    --accent-foreground:  210 40% 98%;
-    --destructive:        0 63% 31%;
+    --background:         154 62% 7%;   /* #071F14 Move Dark Canvas */
+    --foreground:         120 7% 97%;   /* #F7F9F7 Soft White */
+    --card:               153 59% 15%;  /* #0F3B27 Move Green */
+    --card-foreground:    120 7% 97%;   /* #F7F9F7 Soft White */
+    --popover:            154 62% 10%;
+    --popover-foreground: 120 7% 97%;
+    --primary:            101 100% 69%; /* #92FF5F Signal Lime */
+    --primary-foreground: 153 59% 15%;  /* #0F3B27 Move Green */
+    --secondary:          154 45% 12%;
+    --secondary-foreground: 120 7% 97%;
+    --muted:              154 45% 12%;
+    --muted-foreground:   126 40% 75%;
+    --accent:             101 100% 69%;
+    --accent-foreground:  153 59% 15%;
+    --destructive:        17 100% 61%;  /* #FF7036 Orange */
     --destructive-foreground: 0 0% 100%;
-    --border:             215 28% 17%;
-    --input:              215 28% 17%;
-    --ring:               261 97% 61%;
+    --border:             153 35% 20%;
+    --input:              153 35% 20%;
+    --ring:               101 100% 69%;
   }
 }
 

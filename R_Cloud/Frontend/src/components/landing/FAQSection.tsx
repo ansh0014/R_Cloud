@@ -32,36 +32,37 @@ export default function FAQSection() {
   };
 
   return (
-    <section id="faq" className="relative w-full py-24 bg-white border-t border-slate-100">
+    <section id="faq" className="relative w-full py-24 bg-[#071F14] border-t border-[#0F3B27]">
       <div className="max-w-4xl mx-auto px-6">
         <div className="text-center mb-16">
-          <span className="text-xs font-mono font-semibold uppercase tracking-widest text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+          {/* Small Signal Lime box with mono bold text */}
+          <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#0F3B27] bg-[#92FF5F] px-3 py-1 rounded-md shadow-xs">
             FREQUENTLY ASKED QUESTIONS
           </span>
-          <h2 className="text-3xl sm:text-5xl font-instrument text-slate-900 mt-4 mb-3">
+          <h2 className="text-3xl sm:text-5xl font-instrument text-[#F7F9F7] mt-4 mb-3">
             Everything You Need To Know
           </h2>
-          <p className="text-slate-600 font-inter text-base">
+          <p className="text-[#CFF1D2]/80 font-inter text-base">
             Answers to common questions about deployment, architecture, and pricing.
           </p>
         </div>
 
-        <div className="divide-y divide-slate-200 border-y border-slate-200">
+        <div className="divide-y divide-[#CFF1D2]/15 border-y border-[#CFF1D2]/15">
           {faqs.map((f, i) => {
             const isOpen = openIndex === i;
             return (
               <div key={f.q} className="py-6 cursor-pointer" onClick={() => toggle(i)}>
                 <div className="flex items-center justify-between gap-4">
-                  <h3 className="text-lg sm:text-xl font-manrope font-semibold text-slate-900 hover:text-emerald-700 transition-colors">
+                  <h3 className="text-lg sm:text-xl font-manrope font-semibold text-[#F7F9F7] hover:text-[#92FF5F] transition-colors">
                     {f.q}
                   </h3>
-                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
-                    {isOpen ? <Minus className="w-4 h-4 text-emerald-600" /> : <Plus className="w-4 h-4" />}
+                  <div className="w-8 h-8 rounded-full bg-[#0F3B27] border border-[#CFF1D2]/20 flex items-center justify-center text-[#92FF5F] shrink-0">
+                    {isOpen ? <Minus className="w-4 h-4 text-[#92FF5F]" /> : <Plus className="w-4 h-4" />}
                   </div>
                 </div>
 
                 {isOpen && (
-                  <p className="mt-4 font-inter text-slate-600 text-[15px] leading-relaxed animate-fadeIn pr-8">
+                  <p className="mt-4 font-inter text-[#CFF1D2]/80 text-[15px] leading-relaxed animate-fadeIn pr-8">
                     {f.a}
                   </p>
                 )}

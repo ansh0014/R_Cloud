@@ -94,13 +94,13 @@ export default function HeroSection() {
         className="relative w-full min-h-screen flex flex-col justify-start pt-[64px] pb-6 px-6 lg:px-10 overflow-hidden"
         style={{
           background:
-            'radial-gradient(circle at 60% 45%, rgba(16, 185, 129, 0.44) 0%, rgba(5, 46, 22, 0.96) 55%, #022018 100%)',
+            'radial-gradient(circle at 50% 40%, #0F3B27 0%, #0A2619 55%, #05180F 100%)',
         }}
         aria-label="Hero section"
       >
         {/* Subtle mesh background noise */}
         <div
-          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          className="absolute inset-0 opacity-[0.05] pointer-events-none"
           style={{
             backgroundImage:
               'radial-gradient(#ffffff 1px, transparent 1px)',
@@ -108,28 +108,35 @@ export default function HeroSection() {
           }}
         />
 
-        {/* Ambient Top Glow Spheres */}
-        <div className="absolute top-1/4 right-1/4 w-[520px] h-[520px] bg-emerald-400/20 blur-[140px] rounded-full pointer-events-none" />
-        <div className="absolute top-1/2 left-8 w-[400px] h-[400px] bg-emerald-500/15 blur-[110px] rounded-full pointer-events-none" />
+        {/* Ambient Deep Emerald Glow Spheres (Rich contrast, zero white glare) */}
+        <div className="absolute top-1/4 right-1/4 w-[460px] h-[460px] bg-[#0F3B27]/60 blur-[130px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-8 w-[400px] h-[400px] bg-[#071F14]/70 blur-[110px] rounded-full pointer-events-none" />
 
         {/* 3-Section Full Screen Layout: Left Text Div | Center Shape | Right Stats List */}
         <div className="relative z-10 w-full flex-1 flex flex-col lg:flex-row items-start justify-between gap-6 xl:gap-8 pt-4 sm:pt-6 pb-4">
           
           {/* 1. Div directly under Logo: Main Text & CTAs (Tight gap under logo) */}
           <div className="w-full lg:w-[42%] xl:w-[40%] flex flex-col items-start text-left shrink-0 self-start pt-1 sm:pt-2">
+            
+            {/* Small box in Signal Lime with Move Green text & mono font from image */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#92FF5F] text-[#0F3B27] font-mono font-bold text-xs tracking-wider uppercase mb-4 shadow-[0_0_15px_rgba(146,255,95,0.35)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0F3B27] animate-pulse" />
+              <span>v2.0 • Autonomous Agent Graph</span>
+            </div>
+
             {/* Headline */}
-            <h1 className="font-instrument text-white text-5xl sm:text-6xl lg:text-[68px] xl:text-[74px] leading-[1.04] tracking-tight mb-4">
+            <h1 className="font-instrument text-[#F7F9F7] text-5xl sm:text-6xl lg:text-[68px] xl:text-[74px] leading-[1.04] tracking-tight mb-4">
               The knowledge graph{' '}
               <br className="hidden sm:inline" />
               context cloud for{' '}
               <br className="hidden sm:inline" />
-              <span className="italic font-normal text-emerald-300">
+              <span className="italic font-normal text-[#92FF5F]">
                 enterprise software.
               </span>
             </h1>
 
             {/* Subtext */}
-            <p className="font-inter font-normal text-[15px] sm:text-[17px] text-emerald-100/80 max-w-[520px] mb-6 leading-relaxed">
+            <p className="font-inter font-normal text-[15px] sm:text-[17px] text-[#F7F9F7]/80 max-w-[520px] mb-6 leading-relaxed">
               Connect unstructured data, enterprise APIs, and autonomous agents in real-time.
               Full-stack observability and instant deployment on dedicated MicroVMs.
             </p>
@@ -139,16 +146,16 @@ export default function HeroSection() {
               <Link
                 to="/signup"
                 id="hero-book-demo-btn"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-manrope font-bold text-[15px] text-slate-950 bg-white hover:bg-emerald-50 rounded-full px-7 py-3.5 cursor-pointer no-underline transition-all duration-200 shadow-[0_4px_24px_rgba(16,185,129,0.3)] group"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-manrope font-bold text-[15px] text-[#0F3B27] bg-[#92FF5F] hover:bg-[#92FF5F]/90 rounded-full px-7 py-3.5 cursor-pointer no-underline transition-all duration-200 shadow-[0_4px_24px_rgba(146,255,95,0.4)] group"
               >
                 <span>Book Demo</span>
-                <ArrowRight className="w-4 h-4 text-slate-900 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 text-[#0F3B27] group-hover:translate-x-1 transition-transform" />
               </Link>
 
               <Link
                 to="/login"
                 id="hero-start-trial-btn"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-manrope font-semibold text-[15px] text-white bg-emerald-900/40 hover:bg-emerald-800/50 border border-emerald-400/30 rounded-full px-7 py-3.5 cursor-pointer no-underline backdrop-blur-md transition-all duration-200"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-manrope font-semibold text-[15px] text-[#F7F9F7] bg-[#0F3B27]/70 hover:bg-[#0F3B27] border border-[#CFF1D2]/30 rounded-full px-7 py-3.5 cursor-pointer no-underline backdrop-blur-md transition-all duration-200"
               >
                 <GithubIcon />
                 <span>Start Free Trial</span>
@@ -156,15 +163,12 @@ export default function HeroSection() {
             </div>
           </div>
 
-          {/* 2. Center Stage: Continuous 3D Shape Playing (Expanded larger size) */}
-          <div className="flex-1 lg:w-[44%] xl:w-[46%] flex items-center justify-center relative my-auto self-center">
+          {/* 2. Center Stage: Continuous 3D Shape Playing (Expanded larger size with no box behind it) */}
+          <div className="flex-1 lg:w-[46%] xl:w-[48%] flex items-center justify-center relative my-auto self-center">
             <div
               id="hero-sphere-slot"
-              className="relative w-[380px] sm:w-[440px] lg:w-[520px] xl:w-[580px] h-[380px] sm:h-[440px] lg:h-[520px] xl:h-[580px] flex items-center justify-center pointer-events-none"
-            >
-              {/* Soft radial emerald backlight aura */}
-              <div className="absolute w-[320px] sm:w-[380px] lg:w-[460px] xl:w-[500px] h-[320px] sm:h-[380px] lg:h-[460px] xl:h-[500px] rounded-full bg-emerald-400/25 blur-3xl pointer-events-none" />
-            </div>
+              className="relative w-[440px] sm:w-[520px] lg:w-[620px] xl:w-[700px] h-[440px] sm:h-[520px] lg:h-[620px] xl:h-[700px] flex items-center justify-center pointer-events-none"
+            />
           </div>
 
           {/* 3. Right Space: List with Number & Label only (Clean, compact, highly visible) */}
@@ -176,17 +180,17 @@ export default function HeroSection() {
                     key={item.label}
                     className={`flex flex-col ${
                       index !== STAT_ITEMS.length - 1
-                        ? 'border-b border-emerald-500/25 pb-2 mb-2'
+                        ? 'border-b border-[#CFF1D2]/25 pb-2 mb-2'
                         : 'pb-0'
                     }`}
                   >
                     {/* Metric Number */}
-                    <div className="font-manrope font-extrabold text-xl sm:text-[22px] lg:text-[24px] leading-none text-emerald-400 tracking-tight">
+                    <div className="font-manrope font-extrabold text-xl sm:text-[22px] lg:text-[24px] leading-none text-[#92FF5F] tracking-tight">
                       {item.value}
                     </div>
 
                     {/* Uppercase Metric Label */}
-                    <div className="font-manrope font-bold text-[9.5px] sm:text-[10px] tracking-widest uppercase text-emerald-100/90 mt-1">
+                    <div className="font-mono font-bold text-[9.5px] sm:text-[10px] tracking-widest uppercase text-[#CFF1D2] mt-1">
                       {item.label}
                     </div>
                   </div>

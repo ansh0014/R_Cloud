@@ -11,7 +11,7 @@
     <meta name="keywords" content="autonomous agents, AI cloud runtime, microVM sandbox, distributed tracing, AI engineering, ragent, AI infrastructure, context engine, LLM deployment, multi-agent swarm" />
     <meta name="author" content="R_Cloud Technologies Inc." />
     <meta name="application-name" content="R_Cloud" />
-    <meta name="theme-color" content="#032018" />
+    <meta name="theme-color" content="#0F3B27" />
     <link rel="canonical" href="https://rcloud.dev/" />
 
     <!-- Search Engine Crawler Directives -->
@@ -97,6 +97,30 @@
         }
       ]
     }
+    </script>
+
+    <!-- Google Search Console Site Verification -->
+    <meta name="google-site-verification" content="GSC_VERIFICATION_TOKEN_PLACEHOLDER" />
+
+    <!-- Google Analytics (GA4) Script -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      // Default to denied for GDPR compliance until user accepts cookie consent
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied'
+      });
+      // Initialize if measurement ID is supplied in env or script
+      var gaId = window.ENV_GA_ID || 'G-XXXXXXXXXX';
+      if (gaId && gaId !== 'G-XXXXXXXXXX') {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
+        document.head.appendChild(s);
+        gtag('config', gaId, { anonymize_ip: true });
+      }
     </script>
   </head>
   <body>

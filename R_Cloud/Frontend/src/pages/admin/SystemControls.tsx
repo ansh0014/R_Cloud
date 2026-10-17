@@ -8,28 +8,28 @@ export default function SystemControls() {
     <div className="p-6 lg:p-8 space-y-8 animate-in fade-in duration-300 max-w-4xl">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Sliders className="size-6 text-primary" />
+        <Sliders className="size-6 text-[#92FF5F]" />
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-manrope font-manrope">System Controls</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Production system orchestration, Gateway event monitoring, and status status.
+          <h1 className="text-2xl font-bold tracking-tight text-[#F7F9F7] font-manrope">System Controls</h1>
+          <p className="text-sm text-[#CFF1D2]/75 mt-1 font-sans">
+            Production system orchestration, Gateway event monitoring, and microVM health status.
           </p>
         </div>
       </div>
 
-      <div className="bg-[#0d0b17] border border-[#2b2344]/40 rounded-xl p-6 space-y-6">
-        <div className="flex items-center gap-3 border-b border-[#2b2344]/40 pb-4">
-          <ShieldCheck className="size-6 text-emerald-400" />
+      <div className="bg-[#0F3B27] border border-[#CFF1D2]/20 rounded-xl p-6 space-y-6 shadow-xl">
+        <div className="flex items-center gap-3 border-b border-[#CFF1D2]/20 pb-4">
+          <ShieldCheck className="size-6 text-[#92FF5F]" />
           <div>
-            <h2 className="text-base font-bold text-white font-manrope">Production Gateway Connected</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Live status: {isConnected ? 'WebSocket Active' : 'Connecting to API Gateway'}
+            <h2 className="text-base font-bold text-[#F7F9F7] font-manrope">Production Gateway Connected</h2>
+            <p className="text-xs text-[#CFF1D2]/80 mt-0.5 font-mono">
+              Live status: {isConnected ? 'WebSocket Active (100% Uptime)' : 'Connecting to API Gateway...'}
             </p>
           </div>
         </div>
 
-        <p className="text-xs text-slate-400 leading-relaxed">
-          Platform orchestration is managed automatically by the microservices (API Gateway, Deployment Planner, Runtime Service, and AI Agent).
+        <p className="text-xs text-[#CFF1D2]/80 leading-relaxed font-sans">
+          Platform orchestration is managed automatically across microservices (API Gateway, Deployment Planner, Runtime Service, and AI Agent Validation Pipeline).
         </p>
       </div>
     </div>

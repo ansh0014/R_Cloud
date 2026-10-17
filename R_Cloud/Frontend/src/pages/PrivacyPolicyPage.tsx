@@ -4,49 +4,49 @@ import LandingFooter from '../components/landing/LandingFooter';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="relative min-h-screen w-full bg-[#020b08] text-white">
+    <div className="relative min-h-screen w-full bg-[#05180F] text-[#F7F9F7]">
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-6 sm:px-8 pt-32 pb-24">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs font-mono text-emerald-400/70 mb-6">
-          <Link to="/" className="hover:text-emerald-300 transition-colors">HOME</Link>
-          <span>/</span>
-          <span className="text-white">PRIVACY POLICY</span>
+        <div className="flex items-center gap-2 text-xs font-mono text-[#92FF5F] mb-6">
+          <Link to="/" className="hover:underline transition-colors">HOME</Link>
+          <span className="text-[#CFF1D2]/40">/</span>
+          <span className="text-[#F7F9F7] font-bold">PRIVACY POLICY</span>
         </div>
 
         {/* Header */}
-        <header className="border-b border-emerald-900/60 pb-8 mb-10">
-          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight font-manrope text-white mb-3">
+        <header className="border-b border-[#CFF1D2]/20 pb-8 mb-10">
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight font-manrope text-[#F7F9F7] mb-3">
             Privacy Policy
           </h1>
-          <p className="text-sm font-mono text-emerald-400/80">
+          <p className="text-sm font-mono text-[#CFF1D2]/80">
             Effective Date: October 10, 2026 • Last Updated: October 10, 2026
           </p>
         </header>
 
         {/* Content */}
-        <article className="prose prose-invert max-w-none text-emerald-100/80 font-inter space-y-8 text-sm sm:text-base leading-relaxed">
+        <article className="prose prose-invert max-w-none text-[#CFF1D2]/85 font-inter space-y-8 text-sm sm:text-base leading-relaxed">
           <p>
             Welcome to <strong className="text-white font-semibold">R_Cloud</strong> (&quot;Company&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;). We are committed to protecting your personal information and your right to privacy. This Privacy Policy describes how we collect, use, disclose, and safeguard your information when you visit and use the R_Cloud platform, our AI agent deployment infrastructure, dashboard, and associated developer tools (collectively, the &quot;Service&quot;).
           </p>
 
           <section className="space-y-4">
-            <h2 className="text-xl sm:text-2xl font-bold font-manrope text-white border-l-2 border-emerald-500 pl-4">
+            <h2 className="text-xl sm:text-2xl font-bold font-manrope text-[#F7F9F7] border-l-2 border-[#92FF5F] pl-4">
               1. Information We Collect
             </h2>
 
             <div className="space-y-3 pl-4">
-              <h3 className="text-lg font-semibold text-emerald-300">A. Personal Information You Provide</h3>
+              <h3 className="text-lg font-semibold text-[#92FF5F]">A. Personal Information You Provide</h3>
               <p>
-                When you sign in via Google OAuth or other identity providers, we collect your name, email address, profile picture URL, and provider-assigned identifier (<code className="text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded text-xs font-mono">google_subject</code>). We also collect account settings and support inquiries submitted voluntarily.
+                When you sign in via Google OAuth or other identity providers, we collect your name, email address, profile picture URL, and provider-assigned identifier (<code className="text-[#92FF5F] bg-[#0F3B27] px-1.5 py-0.5 rounded text-xs font-mono">google_subject</code>). We also collect account settings and support inquiries submitted voluntarily.
               </p>
 
-              <h3 className="text-lg font-semibold text-emerald-300 pt-2">B. Repository & Source Code Information</h3>
+              <h3 className="text-lg font-semibold text-[#92FF5F] pt-2">B. Repository & Source Code Information</h3>
               <p>
-                We process repository URLs, branch names, commit hashes, application manifest configurations (<code className="text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded text-xs font-mono">ragent.yaml</code>), and repository structures strictly to compile, validate, containerize, and deploy your autonomous AI agents.
+                We process repository URLs, branch names, commit hashes, application manifest configurations (<code className="text-[#92FF5F] bg-[#0F3B27] px-1.5 py-0.5 rounded text-xs font-mono">ragent.yaml</code>), and repository structures strictly to compile, validate, containerize, and deploy your autonomous AI agents.
               </p>
-              <p className="text-xs font-mono text-emerald-400 bg-emerald-950/40 p-3 rounded-lg border border-emerald-900/50">
+              <p className="text-xs font-mono text-[#92FF5F] bg-[#0F3B27] p-3 rounded-lg border border-[#CFF1D2]/25">
                 🔒 Environment secrets and API keys (OpenAI, Anthropic, Gemini, DB credentials) are encrypted at rest with hardware-backed KMS vaults and are never logged or exposed in plain text.
               </p>
 

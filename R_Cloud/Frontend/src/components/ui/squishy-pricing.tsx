@@ -24,13 +24,13 @@ export const Component = ({
     >
       {showHeader && (
         <div className="text-center mb-14 max-w-3xl mx-auto px-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono uppercase tracking-wider mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-[#92FF5F] text-[#0F3B27] text-xs font-mono font-bold uppercase tracking-wider mb-4 shadow-xs">
             PRICING PLANS
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold font-manrope text-white tracking-tight">
+          <h2 className="text-3xl sm:text-5xl font-extrabold font-manrope text-[#F7F9F7] tracking-tight">
             Predictable Compute for Autonomous Fleets
           </h2>
-          <p className="mt-3.5 text-emerald-100/70 text-sm sm:text-base font-inter max-w-xl mx-auto">
+          <p className="mt-3.5 text-[#CFF1D2]/80 text-sm sm:text-base font-inter max-w-xl mx-auto">
             Scale from local prototypes to millions of mission-critical agent executions with deterministic memory isolation.
           </p>
         </div>
@@ -42,7 +42,7 @@ export const Component = ({
           monthlyPrice="299"
           description="For developers & individual engineers deploying autonomous agents with microVM sandboxes"
           cta="Start Building"
-          background="bg-indigo-600 dark:bg-indigo-700"
+          background="bg-[#0F3B27]"
           BGComponent={BGComponent1}
         />
         <PricingCard
@@ -50,7 +50,7 @@ export const Component = ({
           monthlyPrice="999"
           description="For scaling startups and AI engineering teams operating real-time multi-agent swarms"
           cta="Deploy Swarm"
-          background="bg-purple-600 dark:bg-purple-700"
+          background="bg-[#0F3B27] ring-2 ring-[#92FF5F]/70 shadow-[0_0_30px_rgba(146,255,95,0.2)]"
           BGComponent={BGComponent2}
         />
         <PricingCard
@@ -58,7 +58,7 @@ export const Component = ({
           monthlyPrice="4,999"
           description="For large platforms demanding dedicated hardware KMS, custom VPCs, and 99.999% SLA"
           cta="Contact Sales"
-          background="bg-pink-600 dark:bg-pink-700"
+          background="bg-[#071F14] border-[#BFF2F0]/30"
           BGComponent={BGComponent3}
         />
       </div>
@@ -82,26 +82,26 @@ const PricingCard = ({
       whileHover="hover"
       transition={{ duration: 1, ease: 'backInOut' }}
       variants={{ hover: { scale: 1.05 } }}
-      className={`relative h-[410px] w-80 shrink-0 overflow-hidden rounded-2xl p-8 ${background} shadow-2xl hover:shadow-emerald-950/40 transition-shadow border border-white/10`}
+      className={`relative h-[410px] w-80 shrink-0 overflow-hidden rounded-2xl p-8 ${background} shadow-2xl transition-shadow border border-[#CFF1D2]/20`}
     >
-      <div className="relative z-10 text-white">
-        <span className="mb-3 block w-fit rounded-full bg-white/20 backdrop-blur-sm px-3.5 py-1 text-xs font-mono font-semibold text-white border border-white/25 uppercase tracking-wider">
+      <div className="relative z-10 text-[#F7F9F7]">
+        <span className="mb-3 block w-fit rounded-md bg-[#92FF5F] px-3 py-1 text-xs font-mono font-bold text-[#0F3B27] uppercase tracking-wider shadow-xs">
           {label}
         </span>
         <motion.span
           initial={{ scale: 0.85 }}
           variants={{ hover: { scale: 1 } }}
           transition={{ duration: 1, ease: 'backInOut' }}
-          className="my-3 block origin-top-left font-mono text-5xl sm:text-6xl font-black leading-[1.1] tracking-tight"
+          className="my-3 block origin-top-left font-mono text-5xl sm:text-6xl font-black leading-[1.1] tracking-tight text-[#F7F9F7]"
         >
           ${monthlyPrice}/<br />
-          <span className="text-2xl sm:text-3xl font-medium tracking-normal opacity-90">Month</span>
+          <span className="text-2xl sm:text-3xl font-medium tracking-normal text-[#CFF1D2]/80">Month</span>
         </motion.span>
-        <p className="text-sm sm:text-base text-white/90 font-inter leading-relaxed mt-2">{description}</p>
+        <p className="text-sm sm:text-base text-[#CFF1D2]/80 font-inter leading-relaxed mt-2">{description}</p>
       </div>
       <button
         onClick={onClick}
-        className="absolute bottom-5 left-6 right-6 z-20 rounded-xl border-2 border-white bg-white py-2.5 text-center font-mono font-bold text-xs uppercase tracking-wider text-neutral-900 backdrop-blur-sm transition-all duration-200 hover:bg-white/10 hover:text-white hover:border-white/80 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-transparent cursor-pointer shadow-md"
+        className="absolute bottom-5 left-6 right-6 z-20 rounded-xl border border-[#92FF5F] bg-[#92FF5F] py-2.5 text-center font-mono font-bold text-xs uppercase tracking-wider text-[#0F3B27] backdrop-blur-sm transition-all duration-200 hover:bg-[#92FF5F]/90 focus:outline-none focus:ring-2 focus:ring-[#92FF5F]/50 focus:ring-offset-2 focus:ring-offset-transparent cursor-pointer shadow-md"
       >
         {cta}
       </button>

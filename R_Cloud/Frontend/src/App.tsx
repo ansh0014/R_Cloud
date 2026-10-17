@@ -17,6 +17,11 @@ import DeployPage from './pages/dashboard/DeployPage';
 import AdminOverview from './pages/admin/AdminOverview';
 import SystemControls from './pages/admin/SystemControls';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsPage from './pages/TermsPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import NotFoundPage from './pages/NotFoundPage';
+import CookieConsentBanner from './components/ui/CookieConsentBanner';
 
 function App() {
   return (
@@ -37,6 +42,9 @@ function App() {
           <Route path="/login" element={<AuthPage mode="signin" />} />
           <Route path="/signup" element={<AuthPage mode="signup" />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
           {/* Protected User Dashboard */}
           <Route
@@ -68,7 +76,11 @@ function App() {
             <Route index element={<AdminOverview />} />
             <Route path="controls" element={<SystemControls />} />
           </Route>
+
+          {/* 404 Catch-All Page */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        <CookieConsentBanner />
         </Router>
       </AuthProvider>
     </GoogleOAuthProvider>

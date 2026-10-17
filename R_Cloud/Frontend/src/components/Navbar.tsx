@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LimelightNav, type NavItem } from './ui/limelight-nav';
 import { Cpu, Box, BarChart3, CircleDollarSign, BookOpen } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 /* ─── SVG Icons ──────────────────────────────────────────── */
 
 const RCloudLogo = () => (
   <div className="flex items-center gap-2.5 group cursor-pointer">
-    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center transition-transform group-hover:scale-105">
+    <div className="w-8 h-8 rounded-lg bg-[#92FF5F]/20 border border-[#92FF5F]/40 flex items-center justify-center transition-transform group-hover:scale-105">
       <svg
         width="18"
         height="18"
@@ -18,28 +19,28 @@ const RCloudLogo = () => (
       >
         <path
           d="M12 2L2 7L12 12L22 7L12 2Z"
-          stroke="#10b981"
+          stroke="#92FF5F"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
           d="M2 17L12 22L22 17"
-          stroke="#34d399"
+          stroke="#CFF1D2"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
           d="M2 12L12 17L22 12"
-          stroke="#6ee7b7"
+          stroke="#BFF2F0"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
     </div>
-    <span className="font-manrope font-bold text-[17px] text-white tracking-tight">
+    <span className="font-manrope font-bold text-[17px] text-[#F7F9F7] tracking-tight">
       R_Cloud
     </span>
   </div>
@@ -83,6 +84,7 @@ const CloseIcon = () => (
 /* ─── Main Component ─────────────────────────────────────── */
 
 export default function Navbar() {
+  const { user, isAuthenticated } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const navigate = useNavigate();
@@ -209,7 +211,7 @@ export default function Navbar() {
         <Link
           to="/"
           onClick={handleLogoClick}
-          className="flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full bg-[#021d15]/85 backdrop-blur-xl border border-emerald-900/60 shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:border-emerald-500/50 hover:shadow-[0_8px_30px_rgba(16,185,129,0.2)] transition-all duration-300 no-underline cursor-pointer group"
+          className="flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full bg-[#0F3B27]/85 backdrop-blur-xl border border-[#CFF1D2]/20 shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:border-[#92FF5F]/50 hover:shadow-[0_8px_30px_rgba(146,255,95,0.2)] transition-all duration-300 no-underline cursor-pointer group"
           aria-label="R_Cloud Home"
         >
           <RCloudLogo />
@@ -222,35 +224,48 @@ export default function Navbar() {
           items={limelightItems}
           activeIndex={activeTab}
           onTabChange={(index) => setActiveTab(index)}
-          className="bg-[#0e0e11]/95 backdrop-blur-xl border border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.6)] rounded-xl h-12 px-1.5"
-          limelightClassName="bg-white shadow-[0_0_8px_#ffffff,0_0_18px_rgba(255,255,255,0.8)]"
+          className="bg-[#0F3B27]/95 backdrop-blur-xl border border-[#CFF1D2]/20 shadow-[0_12px_40px_rgba(0,0,0,0.6)] rounded-xl h-12 px-1.5"
+          limelightClassName="bg-[#92FF5F] shadow-[0_0_8px_#92FF5F,0_0_18px_rgba(146,255,95,0.8)]"
           showLabels={false}
         />
       </div>
 
       {/* ── 3. Right Island: Auth & Action Buttons Pill ──────── */}
       <div className="fixed top-4 right-4 sm:right-8 z-40 flex items-center gap-2">
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#021d15]/85 backdrop-blur-xl border border-emerald-900/60 shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
-          <Link
-            to="/login"
-            id="nav-signin-btn"
-            className="font-manrope font-semibold text-xs text-emerald-100/80 hover:text-white transition-colors duration-200 no-underline px-3 py-1.5 rounded-full hover:bg-emerald-900/40"
-          >
-            Sign in
-          </Link>
-          <Link
-            to="/signup"
-            id="nav-get-started-btn"
-            className="font-manrope font-bold text-xs text-slate-950 bg-white rounded-full px-4 py-1.5 cursor-pointer no-underline shadow-[0_2px_12px_rgba(16,185,129,0.3)] hover:bg-emerald-50 hover:shadow-[0_4px_16px_rgba(16,185,129,0.4)] transition-all duration-200"
-          >
-            Get started
-          </Link>
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#0F3B27]/85 backdrop-blur-xl border border-[#CFF1D2]/20 shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
+          {isAuthenticated && user ? (
+            <Link
+              to={user.role === 'admin' ? '/admin' : '/dashboard'}
+              id="nav-dashboard-btn"
+              className="font-manrope font-bold text-xs text-[#0F3B27] bg-[#92FF5F] rounded-full px-4 py-1.5 cursor-pointer no-underline shadow-[0_2px_12px_rgba(146,255,95,0.3)] hover:bg-[#92FF5F]/90 hover:shadow-[0_4px_16px_rgba(146,255,95,0.4)] transition-all duration-200 flex items-center gap-1.5"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#0F3B27] animate-pulse" />
+              {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                id="nav-signin-btn"
+                className="font-manrope font-semibold text-xs text-[#F7F9F7]/80 hover:text-[#F7F9F7] transition-colors duration-200 no-underline px-3 py-1.5 rounded-full hover:bg-[#071F14]/60"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/signup"
+                id="nav-get-started-btn"
+                className="font-manrope font-bold text-xs text-[#0F3B27] bg-[#92FF5F] rounded-full px-4 py-1.5 cursor-pointer no-underline shadow-[0_2px_12px_rgba(146,255,95,0.3)] hover:bg-[#92FF5F]/90 hover:shadow-[0_4px_16px_rgba(146,255,95,0.4)] transition-all duration-200"
+              >
+                Get started
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger Button */}
         <button
           id="mobile-menu-toggle"
-          className="md:hidden p-2.5 rounded-full bg-[#021d15]/85 backdrop-blur-xl border border-emerald-900/60 shadow-lg text-white hover:border-emerald-500/50 cursor-pointer"
+          className="md:hidden p-2.5 rounded-full bg-[#0F3B27]/85 backdrop-blur-xl border border-[#CFF1D2]/20 shadow-lg text-[#F7F9F7] hover:border-[#92FF5F]/50 cursor-pointer"
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -262,14 +277,14 @@ export default function Navbar() {
       {/* ── Mobile Full-screen Overlay ──────────────────────── */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-50 bg-[#021f17]/98 backdrop-blur-2xl flex flex-col items-center justify-start pt-16 px-6 text-center animate-fadeIn overflow-y-auto"
+          className="fixed inset-0 z-50 bg-[#071F14]/98 backdrop-blur-2xl flex flex-col items-center justify-start pt-16 px-6 text-center animate-fadeIn overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-label="Mobile navigation menu"
         >
           <button
             id="mobile-menu-close"
-            className="absolute top-6 right-6 p-2 rounded-full bg-emerald-950/80 border border-emerald-800 text-white cursor-pointer"
+            className="absolute top-6 right-6 p-2 rounded-full bg-[#0F3B27] border border-[#CFF1D2]/20 text-[#F7F9F7] cursor-pointer"
             aria-label="Close menu"
             onClick={() => setMobileOpen(false)}
           >
@@ -287,38 +302,51 @@ export default function Navbar() {
                 onClick={item.onClick}
                 className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl border text-left transition-all ${
                   activeTab === idx
-                    ? 'bg-emerald-900/40 border-emerald-500/60 text-white shadow-lg'
-                    : 'bg-emerald-950/20 border-emerald-900/40 text-emerald-200/80 hover:text-white'
+                    ? 'bg-[#0F3B27] border-[#92FF5F]/60 text-[#F7F9F7] shadow-lg'
+                    : 'bg-[#0F3B27]/40 border-[#CFF1D2]/15 text-[#CFF1D2]/80 hover:text-[#F7F9F7]'
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[#92FF5F]/15 text-[#92FF5F] flex items-center justify-center">
                     {item.icon}
                   </div>
                   <span className="font-manrope font-bold text-sm">{item.label}</span>
                 </div>
                 {activeTab === idx && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                  <span className="w-2 h-2 rounded-full bg-[#92FF5F] shadow-[0_0_8px_#92FF5F]" />
                 )}
               </button>
             ))}
           </div>
 
-          <div className="flex flex-col gap-3 w-full max-w-sm pt-8 mt-4 border-t border-emerald-900/60">
-            <Link
-              to="/login"
-              onClick={() => setMobileOpen(false)}
-              className="py-3 px-4 rounded-xl text-white font-manrope font-semibold bg-emerald-950/80 border border-emerald-800 text-center"
-            >
-              Sign In
-            </Link>
-            <Link
-              to="/signup"
-              onClick={() => setMobileOpen(false)}
-              className="py-3 px-4 rounded-xl text-slate-900 font-manrope font-bold bg-white text-center shadow-md hover:bg-emerald-50"
-            >
-              Get Started
-            </Link>
+          <div className="flex flex-col gap-3 w-full max-w-sm pt-8 mt-4 border-t border-[#CFF1D2]/20">
+            {isAuthenticated && user ? (
+              <Link
+                to={user.role === 'admin' ? '/admin' : '/dashboard'}
+                onClick={() => setMobileOpen(false)}
+                className="py-3 px-4 rounded-xl text-[#0F3B27] font-manrope font-bold bg-[#92FF5F] text-center shadow-md hover:bg-[#92FF5F]/90 flex items-center justify-center gap-2"
+              >
+                <span className="w-2 h-2 rounded-full bg-[#0F3B27] animate-pulse" />
+                Go to {user.role === 'admin' ? 'Admin Panel' : 'Dashboard'}
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="py-3 px-4 rounded-xl text-[#F7F9F7] font-manrope font-semibold bg-[#0F3B27] border border-[#CFF1D2]/20 text-center"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileOpen(false)}
+                  className="py-3 px-4 rounded-xl text-[#0F3B27] font-manrope font-bold bg-[#92FF5F] text-center shadow-md hover:bg-[#92FF5F]/90"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

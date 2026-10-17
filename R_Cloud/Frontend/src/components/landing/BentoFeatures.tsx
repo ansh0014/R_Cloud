@@ -431,7 +431,7 @@ export default function BentoFeatures() {
 
       // Draw Wireframe Edges
       ctx.setLineDash([6, 4]);
-      ctx.lineWidth = 1.7;
+      ctx.lineWidth = 1.9;
 
       for (let i = 0; i < edges.length; i++) {
         const edge = edges[i];
@@ -441,9 +441,10 @@ export default function BentoFeatures() {
         if (!p1 || !p2) continue;
 
         const depth = (p1.z + p2.z) * 0.5;
-        const alpha = Math.max(0.18, Math.min(0.85, (depth + 180) / 360));
+        const alpha = Math.max(0.4, Math.min(1.0, (depth + 180) / 360));
 
-        ctx.strokeStyle = `rgba(15, 23, 42, ${alpha * 0.7})`;
+        // Crisp Move Green lines on white box
+        ctx.strokeStyle = `rgba(15, 59, 39, ${alpha * 0.85})`;
         ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
@@ -473,18 +474,17 @@ export default function BentoFeatures() {
           const px = p1.x + (p2.x - p1.x) * pulse.progress;
           const py = p1.y + (p2.y - p1.y) * pulse.progress;
 
-          // Glowing traveling packet
+          // Move Green base node with glowing Signal Lime pulse
           ctx.beginPath();
-          ctx.arc(px, py, 3.2, 0, Math.PI * 2);
-          ctx.fillStyle = '#0f172a';
-          ctx.shadowColor = 'rgba(15, 23, 42, 0.75)';
-          ctx.shadowBlur = 5;
+          ctx.arc(px, py, 3.6, 0, Math.PI * 2);
+          ctx.fillStyle = '#0F3B27';
           ctx.fill();
 
-          // Crisp white center
           ctx.beginPath();
-          ctx.arc(px, py, 1.4, 0, Math.PI * 2);
-          ctx.fillStyle = '#ffffff';
+          ctx.arc(px, py, 2.0, 0, Math.PI * 2);
+          ctx.fillStyle = '#92FF5F';
+          ctx.shadowColor = 'rgba(146, 255, 95, 0.9)';
+          ctx.shadowBlur = 6;
           ctx.fill();
         }
         ctx.shadowBlur = 0;
@@ -494,24 +494,24 @@ export default function BentoFeatures() {
       ctx.setLineDash([]);
       for (let i = 0; i < projected.length; i++) {
         const p = projected[i];
-        const alpha = Math.max(0.2, Math.min(1, (p.z + 180) / 360));
+        const alpha = Math.max(0.4, Math.min(1, (p.z + 180) / 360));
 
-        // Outer halo
+        // Outer subtle halo
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 4.2 * p.scale, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(15, 23, 42, ${alpha * 0.18})`;
+        ctx.arc(p.x, p.y, 4.5 * p.scale, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(15, 59, 39, ${alpha * 0.12})`;
         ctx.fill();
 
-        // Core Black Node
+        // Core Move Green Node
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 2.5 * p.scale, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(15, 23, 42, ${alpha * 0.95})`;
+        ctx.arc(p.x, p.y, 2.8 * p.scale, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(15, 59, 39, ${alpha * 0.95})`;
         ctx.fill();
 
-        // Center White dot
+        // Center Signal Lime pinpoint
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 1 * p.scale, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
+        ctx.arc(p.x, p.y, 1.2 * p.scale, 0, Math.PI * 2);
+        ctx.fillStyle = '#92FF5F';
         ctx.fill();
       }
 
@@ -620,7 +620,7 @@ export default function BentoFeatures() {
     <section
       id="product"
       ref={sectionRef}
-      className="relative w-full py-14 sm:py-16 bg-white border-t border-slate-200/80 overflow-hidden scroll-mt-20"
+      className="relative w-full py-14 sm:py-16 bg-[#F7F9F7] border-t border-[#0F3B27]/15 overflow-hidden scroll-mt-20"
     >
       <div id="features" className="absolute -top-20 pointer-events-none" />
       {/* Background Subtle Tech Dot Grid */}
@@ -628,27 +628,27 @@ export default function BentoFeatures() {
         className="absolute inset-0 pointer-events-none opacity-30"
         style={{
           backgroundImage:
-            'radial-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px), radial-gradient(rgba(15, 23, 42, 0.02) 1px, transparent 1px)',
+            'radial-gradient(rgba(15, 59, 39, 0.15) 1px, transparent 1px), radial-gradient(rgba(146, 255, 95, 0.3) 1px, transparent 1px)',
           backgroundSize: '24px 24px',
           backgroundPosition: '0 0, 12px 12px',
         }}
       />
 
       <div className="relative max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header: Clean, Uncluttered, No Shape Bar */}
+        {/* Header: Clean, Move Green Typography on Soft White */}
         <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
-          <h2 className="text-2xl sm:text-4xl font-instrument text-slate-900 leading-tight mb-2">
+          <h2 className="text-2xl sm:text-4xl font-instrument text-[#0F3B27] leading-tight mb-2">
             Everything Required To Run Agents in Production
           </h2>
 
-          <p className="text-slate-600 font-inter text-xs sm:text-sm leading-relaxed max-w-xl mx-auto">
+          <p className="text-[#0F3B27]/75 font-inter text-xs sm:text-sm leading-relaxed max-w-xl mx-auto">
             Deterministic speed, hardware-isolated microVMs, and enterprise compliance in a single real-time architecture.
           </p>
         </div>
 
         {/* ── Single-Screen Command Center Cockpit Grid ───────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-stretch">
-          {/* Left Column: 3 Smart Feature Cards */}
+          {/* Left Column: 3 Smart Feature Cards (White boxes) */}
           <div className="lg:col-span-4 flex flex-col justify-between gap-3 sm:gap-3.5">
             {leftFeatures.map((feat) => {
               const Icon = feat.icon;
@@ -661,43 +661,53 @@ export default function BentoFeatures() {
                     morphToShape(feat.shapeTarget);
                   }}
                   onMouseLeave={() => setHoveredCard(null)}
-                  className={`group relative p-4 sm:p-4.5 rounded-2xl bg-white border transition-all duration-300 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)] ${
+                  className={`group relative p-4 sm:p-4.5 rounded-2xl bg-white border transition-all duration-300 flex flex-col justify-between shadow-[0_4px_20px_rgba(15,59,39,0.04)] ${
                     isHovered
-                      ? 'border-slate-800 shadow-[0_8px_24px_rgba(0,0,0,0.06)] -translate-y-0.5'
-                      : 'border-slate-200/90 hover:border-slate-300'
+                      ? 'border-[#92FF5F] shadow-[0_8px_30px_rgba(146,255,95,0.2)] -translate-y-0.5'
+                      : 'border-[#0F3B27]/12 hover:border-[#92FF5F]/70'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 group-hover:scale-105 transition-transform">
-                        <Icon className="w-4 h-4 text-slate-800" />
+                      <div className="w-8 h-8 rounded-lg bg-[#92FF5F]/20 border border-[#92FF5F]/40 flex items-center justify-center text-[#0F3B27] group-hover:scale-105 transition-transform">
+                        <Icon className="w-4 h-4 text-[#0F3B27]" />
                       </div>
-                      <h3 className="text-[14px] sm:text-[15px] font-bold font-manrope text-slate-900 leading-tight">
+                      <h3 className="text-[14px] sm:text-[15px] font-bold font-manrope text-[#0F3B27] leading-tight">
                         {feat.title}
                       </h3>
                     </div>
-                    <span className="text-[10px] font-mono font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                    {/* Small Signal Lime box with mono bold text */}
+                    <span className="text-[10px] font-mono font-bold text-[#0F3B27] bg-[#92FF5F] px-2 py-0.5 rounded-md shadow-xs">
                       {feat.tag}
                     </span>
                   </div>
 
-                  <p className="text-[12px] font-inter text-slate-600 leading-relaxed mb-2.5">
+                  <p className="text-[12px] font-inter text-[#0F3B27]/75 leading-relaxed mb-2.5">
                     {feat.desc}
                   </p>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 font-mono text-[11px]">
-                    <span className="font-bold text-slate-900">{feat.stat}</span>
-                    <span className="text-slate-500 text-[10.5px]">{feat.statSub}</span>
+                  <div className="flex items-center justify-between pt-2 border-t border-[#0F3B27]/10 font-mono text-[11px]">
+                    <span className="font-bold text-[#0F3B27]">{feat.stat}</span>
+                    <span className="text-[#0F3B27]/60 text-[10.5px]">{feat.statSub}</span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Center Column: Interactive 3D Wireframe Core with Permanent Pipeline Pulses */}
-          <div className="lg:col-span-4 relative flex flex-col items-center justify-center rounded-2xl bg-slate-50/70 border border-slate-200/90 p-4 min-h-[400px] lg:min-h-[490px] shadow-xs overflow-hidden">
+          {/* Center Column: Interactive 3D Wireframe Core (White Box requested by user) */}
+          <div className="lg:col-span-4 relative flex flex-col items-center justify-center rounded-2xl bg-white border border-[#0F3B27]/15 p-4 min-h-[400px] lg:min-h-[490px] shadow-[0_8px_30px_rgba(15,59,39,0.06)] overflow-hidden">
+            {/* Subtle Tech Dot Grid inside white card */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-20"
+              style={{
+                backgroundImage:
+                  'radial-gradient(#0F3B27 1px, transparent 1px)',
+                backgroundSize: '20px 20px',
+              }}
+            />
             {/* Interactive 3D Canvas */}
-            <div className="relative w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing">
+            <div className="relative z-10 w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing">
               <canvas
                 ref={canvasRef}
                 onPointerDown={handlePointerDown}
@@ -708,7 +718,7 @@ export default function BentoFeatures() {
             </div>
           </div>
 
-          {/* Right Column: 3 Smart Feature Cards */}
+          {/* Right Column: 3 Smart Feature Cards (White boxes) */}
           <div className="lg:col-span-4 flex flex-col justify-between gap-3 sm:gap-3.5">
             {rightFeatures.map((feat) => {
               const Icon = feat.icon;
@@ -721,33 +731,34 @@ export default function BentoFeatures() {
                     morphToShape(feat.shapeTarget);
                   }}
                   onMouseLeave={() => setHoveredCard(null)}
-                  className={`group relative p-4 sm:p-4.5 rounded-2xl bg-white border transition-all duration-300 flex flex-col justify-between shadow-[0_2px_10px_rgba(0,0,0,0.02)] ${
+                  className={`group relative p-4 sm:p-4.5 rounded-2xl bg-white border transition-all duration-300 flex flex-col justify-between shadow-[0_4px_20px_rgba(15,59,39,0.04)] ${
                     isHovered
-                      ? 'border-slate-800 shadow-[0_8px_24px_rgba(0,0,0,0.06)] -translate-y-0.5'
-                      : 'border-slate-200/90 hover:border-slate-300'
+                      ? 'border-[#92FF5F] shadow-[0_8px_30px_rgba(146,255,95,0.2)] -translate-y-0.5'
+                      : 'border-[#0F3B27]/12 hover:border-[#92FF5F]/70'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 group-hover:scale-105 transition-transform">
-                        <Icon className="w-4 h-4 text-slate-800" />
+                      <div className="w-8 h-8 rounded-lg bg-[#92FF5F]/20 border border-[#92FF5F]/40 flex items-center justify-center text-[#0F3B27] group-hover:scale-105 transition-transform">
+                        <Icon className="w-4 h-4 text-[#0F3B27]" />
                       </div>
-                      <h3 className="text-[14px] sm:text-[15px] font-bold font-manrope text-slate-900 leading-tight">
+                      <h3 className="text-[14px] sm:text-[15px] font-bold font-manrope text-[#0F3B27] leading-tight">
                         {feat.title}
                       </h3>
                     </div>
-                    <span className="text-[10px] font-mono font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                    {/* Small Signal Lime box with mono bold text */}
+                    <span className="text-[10px] font-mono font-bold text-[#0F3B27] bg-[#92FF5F] px-2 py-0.5 rounded-md shadow-xs">
                       {feat.tag}
                     </span>
                   </div>
 
-                  <p className="text-[12px] font-inter text-slate-600 leading-relaxed mb-2.5">
+                  <p className="text-[12px] font-inter text-[#0F3B27]/75 leading-relaxed mb-2.5">
                     {feat.desc}
                   </p>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 font-mono text-[11px]">
-                    <span className="font-bold text-slate-900">{feat.stat}</span>
-                    <span className="text-slate-500 text-[10.5px]">{feat.statSub}</span>
+                  <div className="flex items-center justify-between pt-2 border-t border-[#0F3B27]/10 font-mono text-[11px]">
+                    <span className="font-bold text-[#0F3B27]">{feat.stat}</span>
+                    <span className="text-[#0F3B27]/60 text-[10.5px]">{feat.statSub}</span>
                   </div>
                 </div>
               );
