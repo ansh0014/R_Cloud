@@ -1,3 +1,5 @@
+import InteractiveFooterWatermark from './InteractiveFooterWatermark';
+
 export default function LandingFooter() {
   const footerSections = [
     {
@@ -7,14 +9,14 @@ export default function LandingFooter() {
         { label: 'Agent Runtimes', href: '#how-it-works' },
         { label: 'Distributed Tracing', href: '#features' },
         { label: 'MicroVM Sandbox', href: '#features' },
-        { label: 'Pricing', href: '#faq' },
+        { label: 'Pricing', href: '#pricing' },
       ],
     },
     {
       title: 'Resources',
       links: [
-        { label: 'Documentation', href: '/content/FAQ.md' },
-        { label: 'Architecture Specs', href: '/content/SITEMAP.md' },
+        { label: 'Documentation', href: '#faq' },
+        { label: 'Architecture Specs', href: '#features' },
         { label: 'API Reference', href: '/dashboard' },
         { label: 'AgentOps Guide', href: '/dashboard/agents' },
         { label: 'System Status', href: '/dashboard/deployments' },
@@ -24,9 +26,9 @@ export default function LandingFooter() {
       title: 'Company',
       links: [
         { label: 'About R_Cloud', href: '/' },
-        { label: 'Privacy Policy', href: '/content/PRIVACY_POLICY.md' },
-        { label: 'Terms of Service', href: '/' },
-        { label: 'Security & Trust', href: '/' },
+        { label: 'Privacy Policy', href: '/privacy' },
+        { label: 'Terms of Service', href: '/terms' },
+        { label: 'Security & Trust', href: '#features' },
         { label: 'Contact Team', href: 'mailto:support@rcloud.ai' },
       ],
     },
@@ -35,8 +37,8 @@ export default function LandingFooter() {
   return (
     <footer className="relative w-full bg-[#032018] text-white pt-20 pb-12 overflow-hidden border-t border-emerald-950">
       {/* Top Footer Content */}
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-12 pb-16 border-b border-emerald-900/60">
+      <div className="max-w-[1560px] mx-auto px-6 sm:px-10 lg:px-14 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-10 lg:gap-14 pb-16 border-b border-emerald-900/60">
           {/* Brand Info */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
@@ -82,25 +84,21 @@ export default function LandingFooter() {
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-emerald-300/50 font-mono gap-4">
           <p>© {new Date().getFullYear()} R_Cloud Technologies Inc. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <a href="/content/PRIVACY_POLICY.md" className="hover:text-emerald-200 transition-colors">
-              Privacy
+            <a href="/privacy" className="hover:text-emerald-200 transition-colors">
+              Privacy Policy
             </a>
-            <a href="/content/ROBOTS.md" className="hover:text-emerald-200 transition-colors">
-              Robots
+            <a href="/terms" className="hover:text-emerald-200 transition-colors">
+              Terms of Service
             </a>
-            <a href="/content/SITEMAP.md" className="hover:text-emerald-200 transition-colors">
-              Sitemap
+            <a href="/dashboard/deployments" className="hover:text-emerald-200 transition-colors">
+              Status
             </a>
           </div>
         </div>
       </div>
 
-      {/* Massive Faint Watermark Typography across bottom (as seen in screenshot: "Graphify" / "R_Cloud") */}
-      <div className="relative w-full overflow-hidden select-none pointer-events-none mt-12">
-        <h1 className="text-center font-instrument font-bold text-[18vw] leading-none text-emerald-950/40 tracking-tight whitespace-nowrap">
-          R_Cloud
-        </h1>
-      </div>
+      {/* Massive Geometric Shape Interactive Wireframe Watermark */}
+      <InteractiveFooterWatermark />
     </footer>
   );
 }

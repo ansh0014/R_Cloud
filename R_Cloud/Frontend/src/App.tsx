@@ -16,6 +16,7 @@ import TokenUsagePage from './pages/dashboard/TokenUsagePage';
 import DeployPage from './pages/dashboard/DeployPage';
 import AdminOverview from './pages/admin/AdminOverview';
 import SystemControls from './pages/admin/SystemControls';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           />
           <Route path="/login" element={<AuthPage mode="signin" />} />
           <Route path="/signup" element={<AuthPage mode="signup" />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
           {/* Protected User Dashboard */}
           <Route

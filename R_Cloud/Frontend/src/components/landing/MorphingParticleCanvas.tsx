@@ -362,36 +362,62 @@ export default function MorphingParticleCanvas({ currentStep, lightProgress }: M
         rotXRef.current += (0 - rotXRef.current) * 0.15;
 
         // Points snap directly onto the outer rectangular border ("border pe chala jayega")
-        const pad = 14;
+        const pad = 2; // Tightly hug the card's exact border
         const halfW = width * 0.5 - pad;
         const halfH = height * 0.5 - pad;
+        const cornerR = Math.min(16, halfW * 0.15, halfH * 0.15);
         const total = pointsRef.current.length;
 
+        // Perimeter segment lengths for smooth rounded rectangle traversal
+        const straightW = (halfW - cornerR) * 2;
+        const straightH = (halfH - cornerR) * 2;
+        const cornerArc = Math.PI * 0.5 * cornerR;
+        const perimeter = 2 * straightW + 2 * straightH + 4 * cornerArc;
+
         for (let i = 0; i < total; i++) {
-          const t = i / total;
+          let dist = (i / total) * perimeter;
           let tx = 0;
           let ty = 0;
-          if (t < 0.3) {
-            // Top border (left to right)
-            const subT = t / 0.3;
-            tx = -halfW + subT * (2 * halfW);
+
+          if (dist < straightW) {
+            // Top edge (left to right)
+            tx = -halfW + cornerR + dist;
             ty = -halfH;
-          } else if (t < 0.5) {
-            // Right border (top to bottom)
-            const subT = (t - 0.3) / 0.2;
+          } else if ((dist -= straightW) < cornerArc) {
+            // Top-right corner
+            const ang = -Math.PI * 0.5 + (dist / cornerArc) * (Math.PI * 0.5);
+            tx = halfW - cornerR + Math.cos(ang) * cornerR;
+            ty = -halfH + cornerR + Math.sin(ang) * cornerR;
+          } else if ((dist -= cornerArc) < straightH) {
+            // Right edge (top to bottom)
             tx = halfW;
-            ty = -halfH + subT * (2 * halfH);
-          } else if (t < 0.8) {
-            // Bottom border (right to left)
-            const subT = (t - 0.5) / 0.3;
-            tx = halfW - subT * (2 * halfW);
+            ty = -halfH + cornerR + dist;
+          } else if ((dist -= straightH) < cornerArc) {
+            // Bottom-right corner
+            const ang = (dist / cornerArc) * (Math.PI * 0.5);
+            tx = halfW - cornerR + Math.cos(ang) * cornerR;
+            ty = halfH - cornerR + Math.sin(ang) * cornerR;
+          } else if ((dist -= cornerArc) < straightW) {
+            // Bottom edge (right to left)
+            tx = halfW - cornerR - dist;
             ty = halfH;
-          } else {
-            // Left border (bottom to top)
-            const subT = (t - 0.8) / 0.2;
+          } else if ((dist -= straightW) < cornerArc) {
+            // Bottom-left corner
+            const ang = Math.PI * 0.5 + (dist / cornerArc) * (Math.PI * 0.5);
+            tx = -halfW + cornerR + Math.cos(ang) * cornerR;
+            ty = halfH - cornerR + Math.sin(ang) * cornerR;
+          } else if ((dist -= cornerArc) < straightH) {
+            // Left edge (bottom to top)
             tx = -halfW;
-            ty = halfH - subT * (2 * halfH);
+            ty = halfH - cornerR - dist;
+          } else {
+            // Top-left corner
+            dist -= straightH;
+            const ang = Math.PI + (dist / cornerArc) * (Math.PI * 0.5);
+            tx = -halfW + cornerR + Math.cos(ang) * cornerR;
+            ty = -halfH + cornerR + Math.sin(ang) * cornerR;
           }
+
           pointsRef.current[i].targetX = tx;
           pointsRef.current[i].targetY = ty;
           pointsRef.current[i].targetZ = 0;
@@ -471,12 +497,12 @@ export default function MorphingParticleCanvas({ currentStep, lightProgress }: M
 
       // Draw dashed wireframe edges
       if (isRectangle) {
-        // High-tech glowing emerald perimeter border line
-        ctx.setLineDash([10, 6]);
-        ctx.lineWidth = 2.5;
-        ctx.shadowColor = 'rgba(16, 185, 129, 0.6)';
-        ctx.shadowBlur = 8;
-        ctx.strokeStyle = 'rgba(16, 185, 129, 0.85)';
+        // High-tech crisp Jet Black perimeter border line
+        ctx.setLineDash([8, 5]);
+        ctx.lineWidth = 2.4;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+        ctx.shadowBlur = 4;
+        ctx.strokeStyle = '#0f172a';
       } else {
         ctx.setLineDash([7, 4]);
         ctx.lineWidth = 2.2;
@@ -514,17 +540,17 @@ export default function MorphingParticleCanvas({ currentStep, lightProgress }: M
         const p = projected[i];
 
         if (isRectangle) {
-          // Glowing emerald perimeter border node
-          ctx.shadowColor = 'rgba(16, 185, 129, 0.9)';
-          ctx.shadowBlur = 8;
+          // Sharp Jet Black perimeter border node with white inner core
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 3;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+          ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#0f172a';
           ctx.fill();
 
-          ctx.shadowBlur = 2;
+          ctx.shadowBlur = 0;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
           ctx.fillStyle = '#ffffff';
           ctx.fill();
         } else {

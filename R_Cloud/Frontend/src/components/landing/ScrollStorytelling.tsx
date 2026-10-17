@@ -123,7 +123,7 @@ export default function ScrollStorytelling({ activeStep, onStepChange }: ScrollS
     <section
       id="how-it-works"
       ref={containerRef}
-      className="relative w-full bg-[#fbfdfc] border-t border-slate-200/80"
+      className="relative w-full bg-[#fbfdfc] border-t border-slate-200/80 scroll-mt-0"
       style={{ height: '340vh' }}
     >
       {/* Background subtle radial grid pattern */}
@@ -142,13 +142,6 @@ export default function ScrollStorytelling({ activeStep, onStepChange }: ScrollS
         <div className="relative max-w-7xl mx-auto w-full">
           {/* Section Header */}
           <div className="flex flex-col items-center text-center max-w-3xl mx-auto mb-8 sm:mb-12">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 mb-3 shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[12px] font-bold text-emerald-800 tracking-wider uppercase font-manrope">
-                Interactive Architecture Narrative
-              </span>
-            </div>
-
             <h2 className="text-2xl sm:text-4xl lg:text-5xl font-instrument text-slate-900 leading-[1.14]">
               How R_Cloud Powers Autonomous AI{' '}
               <span className="italic text-emerald-700">From Ingestion to Scale</span>

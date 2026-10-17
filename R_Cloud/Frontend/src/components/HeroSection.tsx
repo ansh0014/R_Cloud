@@ -6,10 +6,10 @@ import ScrollStorytelling from './landing/ScrollStorytelling';
 import BentoFeatures from './landing/BentoFeatures';
 import ComparisonTable from './landing/ComparisonTable';
 import ValuePillars from './landing/ValuePillars';
-import TestimonialCards from './landing/TestimonialCards';
 import FAQSection from './landing/FAQSection';
 import CTASection from './landing/CTASection';
 import LandingFooter from './landing/LandingFooter';
+import { SquishyPricing } from './ui/squishy-pricing';
 
 const GithubIcon = () => (
   <svg
@@ -53,12 +53,9 @@ export default function HeroSection() {
     storyStepRef.current = step;
     setStoryStep(step);
     const storySection = document.getElementById('how-it-works');
-    const bentoSection = document.getElementById('features');
     const windowHeight = window.innerHeight;
 
-    if (bentoSection && bentoSection.getBoundingClientRect().top <= windowHeight * 0.55) {
-      setEffectiveStep(4);
-    } else if (storySection && storySection.getBoundingClientRect().top <= windowHeight * 0.6) {
+    if (storySection && storySection.getBoundingClientRect().top <= windowHeight * 0.6) {
       setEffectiveStep(step);
     } else {
       setEffectiveStep(-1);
@@ -68,17 +65,12 @@ export default function HeroSection() {
   useEffect(() => {
     const handleScroll = () => {
       const storySection = document.getElementById('how-it-works');
-      const bentoSection = document.getElementById('features');
       if (!storySection) return;
 
       const windowHeight = window.innerHeight;
       const storyTop = storySection.getBoundingClientRect().top;
-      const bentoTop = bentoSection ? bentoSection.getBoundingClientRect().top : 9999;
 
-      // In Bento mode (Features) -> 3D Rectangle shape
-      if (bentoTop <= windowHeight * 0.55) {
-        setEffectiveStep(4);
-      } else if (storyTop <= windowHeight * 0.5) {
+      if (storyTop <= windowHeight * 0.5) {
         setEffectiveStep(storyStepRef.current);
       } else {
         setEffectiveStep(-1);
@@ -98,6 +90,7 @@ export default function HeroSection() {
 
       {/* ── First Page (Hero Screen): Top to Bottom ───────────── */}
       <section
+        id="hero"
         className="relative w-full min-h-screen flex flex-col justify-start pt-[64px] pb-6 px-6 lg:px-10 overflow-hidden"
         style={{
           background:
@@ -220,8 +213,10 @@ export default function HeroSection() {
       {/* ── 4 Core Value Pillars ──────────────────────────────── */}
       <ValuePillars />
 
-      {/* ── Testimonial Cards Carousel ────────────────────────── */}
-      <TestimonialCards />
+      {/* ── Pricing Section (Squishy Pricing Interactive Cards) ─ */}
+      <div id="pricing" className="relative w-full bg-[#020b08] pt-12 pb-6 border-t border-emerald-950/40 scroll-mt-16">
+        <SquishyPricing className="bg-transparent min-h-0 py-8" showHeader={true} />
+      </div>
 
       {/* ── FAQ Accordion ─────────────────────────────────────── */}
       <FAQSection />
